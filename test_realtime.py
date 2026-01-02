@@ -24,7 +24,7 @@ async def test_realtime():
     """Prueba simple de GPT-4o Realtime con microfono"""
     
     # Modelo actualizado
-    url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17"
+    url = "wss://api.openai.com/v1/realtime?model=gpt-realtime-2025-08-28"
     
     # Iniciar PyAudio
     audio = pyaudio.PyAudio()
