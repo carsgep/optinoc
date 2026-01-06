@@ -5,6 +5,7 @@ import base64
 import pyaudio
 import os
 from dotenv import load_dotenv
+from functions import tools, available_functions
 
 load_dotenv()
 
@@ -80,7 +81,9 @@ async def test_realtime():
                         "threshold": 0.8,              # Mas alto = menos sensible al ruido (0.0-1.0)
                         "prefix_padding_ms": 500,      # Mas padding antes de detectar voz
                         "silence_duration_ms": 1000    # Esperar mas silencio antes de responder
-                    }
+                    },
+                    "tools": tools,
+                    "tool_choice": "auto"
                 }
             }
             
@@ -135,10 +138,11 @@ async def test_realtime():
             
             # Variables para controlar el estado
             response_active = False  # Hay una respuesta en curso
-            
+            pending_function_call = {}  # Para acumular argumentos de function call
+
             async def receive_audio():
                 """Recibir audio de OpenAI y reproducirlo"""
-                nonlocal response_active
+                nonlocal response_active, pending_function_call
                 audio_chunks_received = 0
                 try:
                     async for message in ws:
@@ -194,7 +198,66 @@ async def test_realtime():
                         
                         elif event_type == "response.audio_transcript.done":
                             print()  # Nueva linea al terminar
-                        
+
+                        # Function call - el modelo quiere usar una herramienta
+                        elif event_type == "response.output_item.added":
+                            item = event.get("item", {})
+                            if item.get("type") == "function_call":
+                                pending_function_call = {
+                                    "call_id": item.get("call_id"),
+                                    "name": item.get("name"),
+                                    "arguments": ""
+                                }
+                                print(f"\n[FUNCTION] Modelo llamando: {item.get('name')}")
+
+                        # Argumentos de function call (streaming)
+                        elif event_type == "response.function_call_arguments.delta":
+                            delta = event.get("delta", "")
+                            if pending_function_call:
+                                pending_function_call["arguments"] += delta
+
+                        # Function call completo - ejecutar la funcion
+                        elif event_type == "response.function_call_arguments.done":
+                            if pending_function_call:
+                                func_name = pending_function_call.get("name")
+                                call_id = pending_function_call.get("call_id")
+                                args_str = pending_function_call.get("arguments", "{}")
+
+                                print(f"[FUNCTION] Argumentos: {args_str}")
+
+                                # Parsear argumentos y ejecutar funcion
+                                try:
+                                    args = json.loads(args_str) if args_str else {}
+
+                                    if func_name in available_functions:
+                                        result = available_functions[func_name](**args)
+                                        print(f"[FUNCTION] Resultado: {result}")
+                                    else:
+                                        result = f"Funcion {func_name} no encontrada"
+                                        print(f"[FUNCTION] ERROR: {result}")
+
+                                    # Enviar resultado de vuelta a OpenAI
+                                    await ws.send(json.dumps({
+                                        "type": "conversation.item.create",
+                                        "item": {
+                                            "type": "function_call_output",
+                                            "call_id": call_id,
+                                            "output": result
+                                        }
+                                    }))
+
+                                    # Solicitar que el modelo continue respondiendo
+                                    await ws.send(json.dumps({
+                                        "type": "response.create"
+                                    }))
+
+                                except json.JSONDecodeError as e:
+                                    print(f"[FUNCTION] Error parseando argumentos: {e}")
+                                except Exception as e:
+                                    print(f"[FUNCTION] Error ejecutando: {e}")
+
+                                pending_function_call = {}
+
                         # Ignorar errores de cancel cuando no hay respuesta activa
                         elif event_type == "error":
                             error_code = event.get("error", {}).get("code", "")
