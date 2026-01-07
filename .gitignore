@@ -6,3 +6,7 @@ __pycache__/
 test_twilio/
 .claude/
 test_*.py
+
+#Terraform ignore
+
+terraform.tfvars
