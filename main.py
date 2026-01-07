@@ -15,6 +15,9 @@ from pydantic import BaseModel
 from azure.communication.callautomation import CallAutomationClient
 from azure.communication.callautomation import PhoneNumberIdentifier
 
+# Funciones de DB2
+from functions.functions import tools, available_functions, execute_function
+
 load_dotenv()
 
 # Configuracion
@@ -350,7 +353,7 @@ async def connect_to_openai_realtime(call_id: str):
             active_calls[call_id]["openai_ws"] = ws
             print(f"[OpenAI] Conectado para llamada: {call_id}")
             
-            # Configurar sesion
+            # Configurar sesion con tools de DB2
             await ws.send(json.dumps({
                 "type": "session.update",
                 "session": {
@@ -365,7 +368,8 @@ async def connect_to_openai_realtime(call_id: str):
                         "threshold": 0.5,
                         "prefix_padding_ms": 300,
                         "silence_duration_ms": 500
-                    }
+                    },
+                    "tools": tools  # Agregar herramientas de DB2
                 }
             }))
             
@@ -385,10 +389,10 @@ async def connect_to_openai_realtime(call_id: str):
             async for message in ws:
                 if call_id not in active_calls:
                     break
-                    
+
                 event = json.loads(message)
                 event_type = event.get("type")
-                
+
                 # Audio de respuesta - enviar a ACS
                 if event_type == "response.audio.delta":
                     audio_b64 = event.get("delta", "")
@@ -396,10 +400,54 @@ async def connect_to_openai_realtime(call_id: str):
                         # TODO: Enviar audio a ACS via el WebSocket de media
                         # Esto requiere tener referencia al websocket de ACS
                         pass
-                
+
                 elif event_type == "response.done":
                     print(f"[OpenAI] Respuesta completada para {call_id}")
-                    
+
+                # Manejo de Function Calling
+                elif event_type == "response.function_call_arguments.done":
+                    # El modelo quiere ejecutar una función
+                    function_name = event.get("name")
+                    function_args_str = event.get("arguments", "{}")
+                    call_item_id = event.get("call_id")
+
+                    print(f"[OpenAI] Function call: {function_name} con args: {function_args_str}")
+
+                    try:
+                        # Parsear argumentos (aunque por ahora nuestras funciones no los usan)
+                        function_args = json.loads(function_args_str) if function_args_str else {}
+
+                        # Ejecutar la función
+                        function_result = execute_function(function_name, function_args)
+
+                        print(f"[OpenAI] Resultado de función: {function_result[:200]}...")
+
+                        # Enviar resultado de la función a OpenAI
+                        await ws.send(json.dumps({
+                            "type": "conversation.item.create",
+                            "item": {
+                                "type": "function_call_output",
+                                "call_id": call_item_id,
+                                "output": function_result
+                            }
+                        }))
+
+                        # Solicitar que genere una respuesta con el resultado
+                        await ws.send(json.dumps({"type": "response.create"}))
+
+                    except Exception as e:
+                        print(f"[OpenAI] Error ejecutando función: {str(e)}")
+                        # Enviar error a OpenAI
+                        await ws.send(json.dumps({
+                            "type": "conversation.item.create",
+                            "item": {
+                                "type": "function_call_output",
+                                "call_id": call_item_id,
+                                "output": json.dumps({"error": str(e)})
+                            }
+                        }))
+                        await ws.send(json.dumps({"type": "response.create"}))
+
                 elif event_type == "error":
                     print(f"[OpenAI] Error: {event.get('error')}")
                     

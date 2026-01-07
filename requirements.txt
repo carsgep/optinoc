@@ -4,8 +4,7 @@ python-dotenv
 azure-communication-callautomation==1.2.0
 websockets
 openai
-
-
+ibm-db
 
 ### test
 pyaudio

@@ -5,7 +5,7 @@ import base64
 import pyaudio
 import os
 from dotenv import load_dotenv
-from functions import tools, available_functions
+from functions import tools, available_functions, execute_function
 
 load_dotenv()
 
@@ -229,12 +229,9 @@ async def test_realtime():
                                 try:
                                     args = json.loads(args_str) if args_str else {}
 
-                                    if func_name in available_functions:
-                                        result = available_functions[func_name](**args)
-                                        print(f"[FUNCTION] Resultado: {result}")
-                                    else:
-                                        result = f"Funcion {func_name} no encontrada"
-                                        print(f"[FUNCTION] ERROR: {result}")
+                                    # Usar execute_function que maneja todo correctamente
+                                    result = execute_function(func_name, args)
+                                    print(f"[FUNCTION] Resultado: {result[:200]}...")
 
                                     # Enviar resultado de vuelta a OpenAI
                                     await ws.send(json.dumps({
