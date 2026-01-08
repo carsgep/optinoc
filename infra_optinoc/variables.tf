@@ -14,5 +14,4 @@ variable "rg_name" {
   description = "name of the RG"
   type        = string
   default     = "RG_Optinoc"
-
 }
