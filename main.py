@@ -20,7 +20,8 @@ from azure.communication.callautomation import (
     MediaStreamingOptions,
     StreamingTransportType,
     MediaStreamingContentType,
-    MediaStreamingAudioChannelType
+    MediaStreamingAudioChannelType,
+    AudioFormat
 )
 
 # Funciones de DB2
@@ -122,6 +123,16 @@ async def health():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
+@app.get("/test/websocket")
+async def test_websocket():
+    """Verifica que el WebSocket de media esté accesible"""
+    return {
+        "websocket_url": f"{CALLBACK_URI}/ws/media",
+        "callback_url": f"{CALLBACK_URI}/callbacks/acs",
+        "note": "Verifica que estas URLs sean accesibles desde internet"
+    }
+
+
 # ============================================================================
 # LLAMADAS SALIENTES
 # ============================================================================
@@ -179,13 +190,19 @@ async def make_outbound_call(request: OutboundCallRequest):
             target = PhoneNumberIdentifier(request.target_number)
         
         # Configurar media streaming para audio bidireccional
+        # Convertir https:// a wss:// para WebSocket
+        websocket_url = CALLBACK_URI.replace("https://", "wss://").replace("http://", "ws://")
         media_streaming = MediaStreamingOptions(
-            transport_url=f"{CALLBACK_URI}/ws/media",
+            transport_url=f"{websocket_url}/ws/media",
             transport_type=StreamingTransportType.WEBSOCKET,
             content_type=MediaStreamingContentType.AUDIO,
             audio_channel_type=MediaStreamingAudioChannelType.MIXED,
-            start_media_streaming=True
+            start_media_streaming=True,
+            enable_bidirectional=True,  # CRÍTICO: Habilita envío de audio de vuelta
+            audio_format=AudioFormat.PCM16_K_MONO  # 16kHz PCM mono
         )
+        print(f"[CALL] WebSocket URL: {websocket_url}/ws/media")
+        print(f"[CALL] Bidirectional audio: ENABLED")
 
         # Crear la llamada
         # NOTA: Para PSTN necesitas especificar source_caller_id_number (tu numero ACS)
@@ -203,6 +220,7 @@ async def make_outbound_call(request: OutboundCallRequest):
             "status": "connecting",
             "target": request.target_number,
             "target_type": request.target_type,
+            "target_participant": target,  # Guardar el identificador del participante
             "started_at": datetime.now().isoformat(),
             "openai_ws": None
         }
@@ -325,9 +343,23 @@ async def acs_callback(request: Request):
                     
             elif event_type == "Microsoft.Communication.MediaStreamingStarted":
                 print(f"[ACS] Media streaming iniciado para {call_id}")
-                
+
             elif event_type == "Microsoft.Communication.MediaStreamingStopped":
                 print(f"[ACS] Media streaming detenido para {call_id}")
+
+            elif event_type == "Microsoft.Communication.MediaStreamingFailed":
+                # Media streaming falló - obtener detalles
+                data = event.get("data", {})
+                result_info = data.get("resultInformation", {})
+                error_code = result_info.get("code", "N/A")
+                sub_code = result_info.get("subCode", "N/A")
+                message = result_info.get("message", "Sin mensaje")
+                print(f"[ACS ERROR] MediaStreamingFailed:")
+                print(f"  - Code: {error_code}")
+                print(f"  - SubCode: {sub_code}")
+                print(f"  - Message: {message}")
+                print(f"  - WebSocket URL esperada: {CALLBACK_URI}/ws/media")
+                print(f"  - Full data: {json.dumps(data, indent=2)}")
         
         return {"status": "ok"}
         
@@ -350,10 +382,25 @@ async def media_websocket(websocket: WebSocket):
 
     NOTA: Puede requerir resampling de 16kHz a 24kHz.
     """
+    print(f"[Media WS] Intentando aceptar conexion...")
+    print(f"[Media WS] Headers: {websocket.headers}")
+    print(f"[Media WS] Client: {websocket.client}")
+
     await websocket.accept()
     print("[Media WS] Conexion aceptada de ACS")
 
-    call_id = None
+    # Obtener call_id desde los headers (ACS lo envía aquí)
+    call_id = websocket.headers.get("x-ms-call-connection-id")
+    print(f"[Media WS] Call ID desde headers: {call_id}")
+
+    # Guardar WebSocket inmediatamente si tenemos el call_id
+    if call_id and call_id in active_calls:
+        active_calls[call_id]["media_ws"] = websocket
+        print(f"[Media WS] ✅ WebSocket guardado para {call_id} (desde headers)")
+    elif call_id:
+        print(f"[Media WS] ⚠️ Call ID {call_id} no encontrado en active_calls aún")
+    else:
+        print(f"[Media WS] ⚠️ No se encontró x-ms-call-connection-id en headers")
 
     try:
         async for message in websocket.iter_text():
@@ -362,16 +409,15 @@ async def media_websocket(websocket: WebSocket):
             # Primer mensaje contiene metadata
             if "kind" in data:
                 if data["kind"] == "AudioMetadata":
-                    call_id = data.get("audioMetadata", {}).get("callConnectionId")
-                    print(f"[Media WS] Conectado para llamada: {call_id}")
+                    print(f"[Media WS] AudioMetadata recibido")
 
-                    # Guardar WebSocket de ACS media en la llamada
-                    if call_id and call_id in active_calls:
+                    # Intentar guardar el WebSocket si aún no está guardado
+                    if call_id and call_id in active_calls and not active_calls[call_id].get("media_ws"):
                         active_calls[call_id]["media_ws"] = websocket
-                        print(f"[Media WS] WebSocket guardado para {call_id}")
+                        print(f"[Media WS] ✅ WebSocket guardado para {call_id} (desde AudioMetadata)")
 
                 elif data["kind"] == "AudioData":
-                    # Audio del usuario - enviar a OpenAI
+                    # Audio del usuario - enviar a OpenAI (sin logging para no saturar)
                     audio_data = data.get("audioData", {}).get("data", "")
 
                     if call_id and call_id in active_calls:
@@ -426,6 +472,7 @@ async def connect_to_openai_realtime(call_id: str):
             print(f"[OpenAI] Conectado para llamada: {call_id}")
             
             # Configurar sesion con tools de DB2
+            # NOTA: Usamos modalities=["text"] para obtener solo texto (TTS lo hace ACS)
             await ws.send(json.dumps({
                 "type": "session.update",
                 "session": {
@@ -441,7 +488,8 @@ async def connect_to_openai_realtime(call_id: str):
                         "prefix_padding_ms": 300,
                         "silence_duration_ms": 500
                     },
-                    "tools": tools  # Agregar herramientas de DB2
+                    "tools": tools,  # Agregar herramientas de DB2
+                    "temperature": 0.8
                 }
             }))
             
@@ -471,6 +519,12 @@ async def connect_to_openai_realtime(call_id: str):
                     if audio_b64:
                         # Enviar audio a ACS (con resampling 24kHz → 16kHz)
                         await send_audio_to_acs(call_id, audio_b64)
+
+                elif event_type == "response.audio_transcript.done":
+                    # Log del texto para debugging
+                    transcript = event.get("transcript", "")
+                    if transcript:
+                        print(f"[OpenAI] 📝 Dijo: {transcript}")
 
                 elif event_type == "response.done":
                     print(f"[OpenAI] Respuesta completada para {call_id}")
@@ -591,19 +645,19 @@ async def send_audio_to_acs(call_id: str, audio_b64: str):
     media_ws = active_calls[call_id].get("media_ws")
 
     if not media_ws:
-        # WebSocket de ACS media aún no está conectado
         return
 
     try:
         # Resamplear de 24kHz a 16kHz
         audio_16khz = resample_audio(audio_b64, input_rate=24000, output_rate=16000)
 
-        # Formato de mensaje para ACS
+        # Formato de mensaje para ACS - DEBE usar mayúsculas según documentación
         message = {
-            "kind": "AudioData",
-            "audioData": {
-                "data": audio_16khz
-            }
+            "Kind": "AudioData",  # Mayúscula
+            "AudioData": {
+                "Data": audio_16khz  # Mayúscula
+            },
+            "StopAudio": None
         }
 
         # Enviar a ACS
