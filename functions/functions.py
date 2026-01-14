@@ -47,6 +47,21 @@ tools = [
             "properties": {},
             "required": []
         }
+    },
+    {
+        "type": "function",
+        "name": "set_bot_muted",
+        "description": "Controla si el bot debe hablar o quedarse en silencio durante la llamada. IMPORTANTE: SOLO usa esta función cuando escuches comandos que EMPIECEN con 'OPTI' seguido de 'silencio', 'haz silencio', 'habla', 'vuelve a hablar', o 'actívate'. Si alguien dice 'silencio' o 'habla' sin mencionar 'OPTI', NO llames esta función.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "muted": {
+                    "type": "boolean",
+                    "description": "true para silenciar el bot cuando escuches 'OPTI HAZ SILENCIO' o 'OPTI SILENCIO'. false para reactivarlo cuando escuches 'OPTI VUELVE A HABLAR' o 'OPTI HABLA'."
+                }
+            },
+            "required": ["muted"]
+        }
     }
 ]
 

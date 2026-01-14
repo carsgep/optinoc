@@ -224,7 +224,8 @@ async def make_outbound_call(request: OutboundCallRequest):
             "target_type": request.target_type,
             "target_participant": target,  # Guardar el identificador del participante
             "started_at": datetime.now().isoformat(),
-            "openai_ws": None
+            "openai_ws": None,
+            "bot_muted": False  # Control para silenciar el bot
         }
         
         print(f"[CALL] Llamada iniciada: {call_id} -> {request.target_number}")
@@ -419,7 +420,8 @@ async def media_websocket(websocket: WebSocket):
                         print(f"[Media WS] ✅ WebSocket guardado para {call_id} (desde AudioMetadata)")
 
                 elif data["kind"] == "AudioData":
-                    # Audio del usuario - enviar a OpenAI (sin logging para no saturar)
+                    # Audio del usuario - siempre enviar a OpenAI para que pueda escuchar
+                    # comandos de reactivación incluso cuando está silenciado
                     audio_data = data.get("audioData", {}).get("data", "")
 
                     if call_id and call_id in active_calls:
@@ -451,23 +453,40 @@ async def media_websocket(websocket: WebSocket):
 # CONEXION CON OPENAI REALTIME
 # ============================================================================
 
-async def connect_to_openai_realtime(call_id: str):
+async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
     """
     Establece conexion WebSocket con OpenAI Realtime API
-    y maneja el flujo de audio bidireccional.
+    y maneja el flujo de audio bidireccional con reconexión automática.
+
+    Args:
+        call_id: ID de la llamada
+        retry_count: Número de reintentos realizados
     """
+    MAX_RETRIES = 3  # Definir al inicio para uso en except blocks
+
     if call_id not in active_calls:
+        print(f"[OpenAI] Call {call_id} ya no existe en active_calls")
         return
-    
+
+    if retry_count >= MAX_RETRIES:
+        print(f"[OpenAI] ❌ Máximo de reintentos alcanzado ({MAX_RETRIES}) para {call_id}")
+        return
+
+    if retry_count > 0:
+        print(f"[OpenAI] 🔄 Reintento {retry_count}/{MAX_RETRIES} para {call_id}")
+
     url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17"
-    
+
     try:
         async with websockets.connect(
             url,
             additional_headers={
                 "Authorization": f"Bearer {OPENAI_API_KEY}",
                 "OpenAI-Beta": "realtime=v1"
-            }
+            },
+            ping_interval=20,  # Enviar ping cada 20 segundos
+            ping_timeout=10,   # Timeout de 10 segundos para pong
+            close_timeout=10   # Timeout para cierre graceful
         ) as ws:
             # Guardar referencia
             active_calls[call_id]["openai_ws"] = ws
@@ -495,17 +514,20 @@ async def connect_to_openai_realtime(call_id: str):
                 }
             }))
             
-            # Saludo inicial
-            await asyncio.sleep(0.5)
-            await ws.send(json.dumps({
-                "type": "conversation.item.create",
-                "item": {
-                    "type": "message",
-                    "role": "user", 
-                    "content": [{"type": "input_text", "text": "Saluda al usuario"}]
-                }
-            }))
-            await ws.send(json.dumps({"type": "response.create"}))
+            # Saludo inicial - solo en la primera conexión (no en reconexiones)
+            if retry_count == 0:
+                await asyncio.sleep(2.0)  # Esperar 2 segundos antes de saludar
+                await ws.send(json.dumps({
+                    "type": "conversation.item.create",
+                    "item": {
+                        "type": "message",
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": "Saluda al usuario brevemente"}]
+                    }
+                }))
+                await ws.send(json.dumps({"type": "response.create"}))
+            else:
+                print(f"[OpenAI] Reconexión exitosa, continuando conversación...")
             
             # Procesar mensajes de OpenAI
             async for message in ws:
@@ -531,21 +553,56 @@ async def connect_to_openai_realtime(call_id: str):
                 elif event_type == "response.done":
                     print(f"[OpenAI] Respuesta completada para {call_id}")
 
+                # Log de otros eventos importantes para debugging
+                elif event_type == "response.output_item.added":
+                    item = event.get("item", {})
+                    if item.get("type") == "function_call":
+                        print(f"[OpenAI] 🔧 Function call agregado: {item.get('name')}")
+
+                elif event_type == "response.output_item.done":
+                    item = event.get("item", {})
+                    if item.get("type") == "function_call":
+                        print(f"[OpenAI] 🔧 Function call completado: {item.get('name')}")
+
                 # Manejo de Function Calling
                 elif event_type == "response.function_call_arguments.done":
                     # El modelo quiere ejecutar una función
                     function_name = event.get("name")
                     function_args_str = event.get("arguments", "{}")
-                    call_item_id = event.get("item_id")
+                    function_call_id = event.get("call_id")  # Este es el ID correcto
 
-                    print(f"[OpenAI] Function call: {function_name} con args: {function_args_str}")
+                    print(f"[OpenAI] Function call: {function_name}")
+                    print(f"[OpenAI] Call ID: {function_call_id}")
+                    print(f"[OpenAI] Arguments: {function_args_str}")
 
                     try:
-                        # Parsear argumentos (aunque por ahora nuestras funciones no los usan)
+                        # Parsear argumentos
                         function_args = json.loads(function_args_str) if function_args_str else {}
 
-                        # Ejecutar la función
-                        function_result = execute_function(function_name, function_args)
+                        # Manejar función especial set_bot_muted
+                        if function_name == "set_bot_muted":
+                            muted = function_args.get("muted", False)
+                            active_calls[call_id]["bot_muted"] = muted
+
+                            status = "SILENCIADO" if muted else "REACTIVADO"
+                            print(f"[BOT] {'🔇' if muted else '🔊'} Comando detectado: Bot {status}")
+                            print(f"[BOT] Call ID: {call_id}")
+
+                            if muted:
+                                function_result = json.dumps({
+                                    "success": True,
+                                    "muted": True,
+                                    "message": "MODO SILENCIADO ACTIVADO por comando 'OPTI HAZ SILENCIO'. A partir de ahora, SOLO responde a comandos de reactivación que empiecen con 'OPTI' como 'OPTI VUELVE A HABLAR' o 'OPTI HABLA'. IGNORA todas las demás conversaciones, preguntas y menciones de 'silencio' o 'habla' que NO incluyan tu nombre 'OPTI'."
+                                })
+                            else:
+                                function_result = json.dumps({
+                                    "success": True,
+                                    "muted": False,
+                                    "message": "MODO SILENCIADO DESACTIVADO por comando 'OPTI VUELVE A HABLAR'. Ya puedes participar normalmente en la conversación y responder a todas las preguntas. Recuerda que solo debes silenciarte cuando escuches comandos que empiecen con 'OPTI'."
+                                })
+                        else:
+                            # Ejecutar funciones normales (DB2, etc.)
+                            function_result = execute_function(function_name, function_args)
 
                         print(f"[OpenAI] Resultado de función: {function_result[:200]}...")
 
@@ -554,10 +611,12 @@ async def connect_to_openai_realtime(call_id: str):
                             "type": "conversation.item.create",
                             "item": {
                                 "type": "function_call_output",
-                                "call_id": call_item_id,
+                                "call_id": function_call_id,  # Usar el ID correcto
                                 "output": function_result
                             }
                         }))
+
+                        print(f"[OpenAI] ✅ Resultado enviado para call_id: {function_call_id}")
 
                         # Solicitar que genere una respuesta con el resultado
                         await ws.send(json.dumps({"type": "response.create"}))
@@ -569,21 +628,55 @@ async def connect_to_openai_realtime(call_id: str):
                             "type": "conversation.item.create",
                             "item": {
                                 "type": "function_call_output",
-                                "call_id": call_item_id,
+                                "call_id": function_call_id,  # Usar el ID correcto
                                 "output": json.dumps({"error": str(e)})
                             }
                         }))
                         await ws.send(json.dumps({"type": "response.create"}))
 
                 elif event_type == "error":
-                    print(f"[OpenAI] Error: {event.get('error')}")
-                    
+                    error_data = event.get('error', {})
+                    print(f"[OpenAI] ❌ Error event: {error_data}")
+
+    except websockets.exceptions.ConnectionClosed as e:
+        print(f"[OpenAI] ⚠️ WebSocket cerrado inesperadamente para {call_id}")
+        print(f"[OpenAI] Código: {e.code}, Razón: {e.reason}")
+
+        # Intentar reconectar si la llamada sigue activa
+        if call_id in active_calls and active_calls[call_id].get("status") == "connected":
+            print(f"[OpenAI] 🔄 Intentando reconectar... (intento {retry_count + 1}/{MAX_RETRIES})")
+            await asyncio.sleep(2)  # Esperar 2 segundos antes de reconectar
+            await connect_to_openai_realtime(call_id, retry_count + 1)
+        else:
+            print(f"[OpenAI] Llamada {call_id} ya terminó, no reconectar")
+
+    except websockets.exceptions.WebSocketException as e:
+        print(f"[OpenAI] ❌ Error de WebSocket: {type(e).__name__}: {e}")
+
+        # Intentar reconectar
+        if call_id in active_calls and retry_count < MAX_RETRIES:
+            print(f"[OpenAI] 🔄 Intentando reconectar... (intento {retry_count + 1}/{MAX_RETRIES})")
+            await asyncio.sleep(2)
+            await connect_to_openai_realtime(call_id, retry_count + 1)
+
+    except asyncio.TimeoutError:
+        print(f"[OpenAI] ⏱️ Timeout en la conexión para {call_id}")
+
+        # Intentar reconectar
+        if call_id in active_calls and retry_count < MAX_RETRIES:
+            print(f"[OpenAI] 🔄 Intentando reconectar... (intento {retry_count + 1}/{MAX_RETRIES})")
+            await asyncio.sleep(2)
+            await connect_to_openai_realtime(call_id, retry_count + 1)
+
     except Exception as e:
-        print(f"[OpenAI] Error de conexion: {e}")
+        print(f"[OpenAI] ❌ Error inesperado: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+
     finally:
         if call_id in active_calls:
             active_calls[call_id]["openai_ws"] = None
-        print(f"[OpenAI] Desconectado para llamada: {call_id}")
+        print(f"[OpenAI] Desconectado para llamada: {call_id} (retry_count: {retry_count})")
 
 
 # ============================================================================
@@ -644,6 +737,10 @@ async def send_audio_to_acs(call_id: str, audio_b64: str):
     if call_id not in active_calls:
         return
 
+    # Verificar si el bot está silenciado
+    if active_calls[call_id].get("bot_muted", False):
+        return  # No enviar audio si está silenciado
+
     media_ws = active_calls[call_id].get("media_ws")
 
     if not media_ws:
@@ -699,6 +796,24 @@ async def check_business_hours():
         "is_business_hours": is_business_hours(),
         "current_time": datetime.now().isoformat(),
         "recommendation": "teams" if is_business_hours() else "phone"
+    }
+
+
+@app.get("/calls/{call_id}/mute-status")
+async def get_mute_status(call_id: str):
+    """Obtiene el estado de silenciamiento del bot en una llamada"""
+    if call_id not in active_calls:
+        raise HTTPException(status_code=404, detail="Llamada no encontrada")
+
+    is_muted = active_calls[call_id].get("bot_muted", False)
+    return {
+        "call_id": call_id,
+        "bot_muted": is_muted,
+        "status": "SILENCIADO" if is_muted else "ACTIVO",
+        "instructions": {
+            "mute": "Di: 'OPTI HAZ SILENCIO' o 'OPTI SILENCIO'",
+            "unmute": "Di: 'OPTI VUELVE A HABLAR' o 'OPTI HABLA'"
+        }
     }
 
 
