@@ -1,10 +1,12 @@
 fastapi
 uvicorn
 python-dotenv
-azure-communication-callautomation==1.2.0
+azure-communication-callautomation>=1.5.0
 websockets
 openai
 ibm-db
+numpy
+scipy
 
 ### test
 pyaudio

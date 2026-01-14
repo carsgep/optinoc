@@ -10,10 +10,18 @@ from dotenv import load_dotenv
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
+import numpy as np
+from scipy import signal
 
 # Azure Communication Services
-from azure.communication.callautomation import CallAutomationClient
-from azure.communication.callautomation import PhoneNumberIdentifier
+from azure.communication.callautomation import (
+    CallAutomationClient,
+    PhoneNumberIdentifier,
+    MediaStreamingOptions,
+    StreamingTransportType,
+    MediaStreamingContentType,
+    MediaStreamingAudioChannelType
+)
 
 # Funciones de DB2
 from functions.functions import tools, available_functions, execute_function
@@ -24,6 +32,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ACS_CONNECTION_STRING = os.getenv("ACS_CONNECTION_STRING")
 CALLBACK_URI = os.getenv("CALLBACK_URI")  # URL publica - usar ngrok para desarrollo
+TENANT_ID = os.getenv("TENANT_ID")  # Microsoft 365 Tenant ID para llamadas a Teams
 
 # Cargar prompt
 def load_prompt():
@@ -140,17 +149,50 @@ async def make_outbound_call(request: OutboundCallRequest):
         # Determinar el tipo de destino
         if request.target_type == "teams":
             # Llamada a Teams (requiere Teams interoperability habilitado en ACS)
-            from azure.communication.callautomation import MicrosoftTeamsUserIdentifier
-            target = MicrosoftTeamsUserIdentifier(request.target_number)
+            from azure.communication.callautomation import MicrosoftTeamsUserIdentifier, CommunicationCloudEnvironment
+
+            # Determinar el formato del identificador
+            if "@" in request.target_number and "." in request.target_number:
+                # Es un email/UPN (user@domain.com) - NO soportado directamente, necesita Object ID
+                raise HTTPException(
+                    status_code=400,
+                    detail="Para llamadas a Teams usa el Object ID del usuario (GUID), no el email/UPN"
+                )
+            else:
+                # Es un Object ID
+                if not TENANT_ID:
+                    raise HTTPException(
+                        status_code=503,
+                        detail="TENANT_ID no configurado en .env. Necesario para llamadas a Teams"
+                    )
+                user_id = request.target_number
+                print(f"[CALL] Usando Object ID para Teams: {user_id}")
+                print(f"[CALL] Tenant ID: {TENANT_ID}")
+
+            # Crear identificador de Teams con cloud environment
+            target = MicrosoftTeamsUserIdentifier(
+                user_id=user_id,
+                cloud=CommunicationCloudEnvironment.PUBLIC
+            )
         else:
             # Llamada telefonica PSTN
             target = PhoneNumberIdentifier(request.target_number)
         
+        # Configurar media streaming para audio bidireccional
+        media_streaming = MediaStreamingOptions(
+            transport_url=f"{CALLBACK_URI}/ws/media",
+            transport_type=StreamingTransportType.WEBSOCKET,
+            content_type=MediaStreamingContentType.AUDIO,
+            audio_channel_type=MediaStreamingAudioChannelType.MIXED,
+            start_media_streaming=True
+        )
+
         # Crear la llamada
         # NOTA: Para PSTN necesitas especificar source_caller_id_number (tu numero ACS)
         call_result = acs_client.create_call(
             target_participant=target,
-            callback_url=f"{CALLBACK_URI}/callbacks/acs"
+            callback_url=f"{CALLBACK_URI}/callbacks/acs",
+            media_streaming=media_streaming
         )
         
         call_id = call_result.call_connection_id
@@ -247,6 +289,19 @@ async def acs_callback(request: Request):
             
             print(f"[ACS Event] {event_type} - Call: {call_id}")
             
+            # Log detallado para eventos de error
+            if event_type == "Microsoft.Communication.CreateCallFailed":
+                data = event.get("data", {})
+                result_info = data.get("resultInformation", {})
+                error_code = result_info.get("code", "N/A")
+                sub_code = result_info.get("subCode", "N/A")
+                message = result_info.get("message", "Sin mensaje")
+                print(f"[ACS ERROR] CreateCallFailed:")
+                print(f"  - Code: {error_code}")
+                print(f"  - SubCode: {sub_code}")
+                print(f"  - Message: {message}")
+                print(f"  - Full data: {json.dumps(data, indent=2)}")
+            
             if event_type == "Microsoft.Communication.CallConnected":
                 # Llamada conectada - iniciar conexion con OpenAI
                 if call_id in active_calls:
@@ -255,7 +310,12 @@ async def acs_callback(request: Request):
                     asyncio.create_task(connect_to_openai_realtime(call_id))
                     
             elif event_type == "Microsoft.Communication.CallDisconnected":
-                # Llamada terminada
+                # Llamada terminada - obtener razón
+                data = event.get("data", {})
+                result_info = data.get("resultInformation", {})
+                if result_info:
+                    print(f"[ACS] CallDisconnected reason: Code={result_info.get('code')}, SubCode={result_info.get('subCode')}, Message={result_info.get('message')}")
+                
                 if call_id in active_calls:
                     # Cerrar conexion con OpenAI si existe
                     openai_ws = active_calls[call_id].get("openai_ws")
@@ -284,46 +344,58 @@ async def acs_callback(request: Request):
 async def media_websocket(websocket: WebSocket):
     """
     WebSocket que recibe el audio de ACS y lo envia a OpenAI Realtime.
-    
+
     ACS envia audio en formato PCM 16-bit, 16kHz, mono.
     OpenAI Realtime espera PCM 16-bit, 24kHz, mono.
-    
+
     NOTA: Puede requerir resampling de 16kHz a 24kHz.
     """
     await websocket.accept()
-    
+    print("[Media WS] Conexion aceptada de ACS")
+
     call_id = None
-    openai_ws = None
-    
+
     try:
         async for message in websocket.iter_text():
             data = json.loads(message)
-            
+
             # Primer mensaje contiene metadata
             if "kind" in data:
                 if data["kind"] == "AudioMetadata":
                     call_id = data.get("audioMetadata", {}).get("callConnectionId")
                     print(f"[Media WS] Conectado para llamada: {call_id}")
-                    
-                    # Obtener conexion OpenAI de la llamada
+
+                    # Guardar WebSocket de ACS media en la llamada
                     if call_id and call_id in active_calls:
-                        openai_ws = active_calls[call_id].get("openai_ws")
-                        
+                        active_calls[call_id]["media_ws"] = websocket
+                        print(f"[Media WS] WebSocket guardado para {call_id}")
+
                 elif data["kind"] == "AudioData":
                     # Audio del usuario - enviar a OpenAI
                     audio_data = data.get("audioData", {}).get("data", "")
-                    
-                    if openai_ws and audio_data:
-                        # Enviar audio a OpenAI Realtime
-                        # NOTA: Aqui podrias necesitar resampling 16kHz -> 24kHz
-                        await openai_ws.send(json.dumps({
-                            "type": "input_audio_buffer.append",
-                            "audio": audio_data  # Ya viene en base64
-                        }))
-                        
+
+                    if call_id and call_id in active_calls:
+                        openai_ws = active_calls[call_id].get("openai_ws")
+
+                        if openai_ws and audio_data:
+                            # Resamplear de 16kHz (ACS) a 24kHz (OpenAI)
+                            audio_24khz = resample_audio(audio_data, input_rate=16000, output_rate=24000)
+
+                            # Enviar audio a OpenAI Realtime
+                            await openai_ws.send(json.dumps({
+                                "type": "input_audio_buffer.append",
+                                "audio": audio_24khz
+                            }))
+                        elif not openai_ws:
+                            # OpenAI aun no esta conectado, esperar
+                            await asyncio.sleep(0.1)
+
     except Exception as e:
         print(f"[Media WS] Error: {e}")
     finally:
+        # Limpiar referencia al WebSocket de media
+        if call_id and call_id in active_calls:
+            active_calls[call_id]["media_ws"] = None
         print(f"[Media WS] Desconectado: {call_id}")
 
 
@@ -397,9 +469,8 @@ async def connect_to_openai_realtime(call_id: str):
                 if event_type == "response.audio.delta":
                     audio_b64 = event.get("delta", "")
                     if audio_b64:
-                        # TODO: Enviar audio a ACS via el WebSocket de media
-                        # Esto requiere tener referencia al websocket de ACS
-                        pass
+                        # Enviar audio a ACS (con resampling 24kHz → 16kHz)
+                        await send_audio_to_acs(call_id, audio_b64)
 
                 elif event_type == "response.done":
                     print(f"[OpenAI] Respuesta completada para {call_id}")
@@ -409,7 +480,7 @@ async def connect_to_openai_realtime(call_id: str):
                     # El modelo quiere ejecutar una función
                     function_name = event.get("name")
                     function_args_str = event.get("arguments", "{}")
-                    call_item_id = event.get("call_id")
+                    call_item_id = event.get("item_id")
 
                     print(f"[OpenAI] Function call: {function_name} con args: {function_args_str}")
 
@@ -457,6 +528,89 @@ async def connect_to_openai_realtime(call_id: str):
         if call_id in active_calls:
             active_calls[call_id]["openai_ws"] = None
         print(f"[OpenAI] Desconectado para llamada: {call_id}")
+
+
+# ============================================================================
+# AUDIO PROCESSING
+# ============================================================================
+
+def resample_audio(audio_b64: str, input_rate: int = 24000, output_rate: int = 16000) -> str:
+    """
+    Resamplea audio PCM 16-bit de una tasa de muestreo a otra.
+
+    Args:
+        audio_b64: Audio en base64 (PCM 16-bit)
+        input_rate: Tasa de muestreo de entrada (Hz)
+        output_rate: Tasa de muestreo de salida (Hz)
+
+    Returns:
+        Audio resampleado en base64 (PCM 16-bit)
+    """
+    try:
+        # Decodificar de base64
+        audio_bytes = base64.b64decode(audio_b64)
+
+        # Convertir bytes a array numpy (int16)
+        audio_int16 = np.frombuffer(audio_bytes, dtype=np.int16)
+
+        # Convertir a float para procesamiento
+        audio_float = audio_int16.astype(np.float32)
+
+        # Calcular número de muestras de salida
+        num_samples = int(len(audio_float) * output_rate / input_rate)
+
+        # Resamplear usando scipy
+        resampled = signal.resample(audio_float, num_samples)
+
+        # Convertir de vuelta a int16
+        resampled_int16 = np.clip(resampled, -32768, 32767).astype(np.int16)
+
+        # Convertir a bytes y luego a base64
+        resampled_bytes = resampled_int16.tobytes()
+        resampled_b64 = base64.b64encode(resampled_bytes).decode('utf-8')
+
+        return resampled_b64
+
+    except Exception as e:
+        print(f"[Audio] Error resampleando: {e}")
+        return audio_b64  # Devolver original si falla
+
+
+async def send_audio_to_acs(call_id: str, audio_b64: str):
+    """
+    Envia audio desde OpenAI a ACS a través del WebSocket de media.
+    Convierte de 24kHz (OpenAI) a 16kHz (ACS).
+
+    Args:
+        call_id: ID de la llamada
+        audio_b64: Audio en base64 desde OpenAI (PCM 16-bit, 24kHz)
+    """
+    if call_id not in active_calls:
+        return
+
+    media_ws = active_calls[call_id].get("media_ws")
+
+    if not media_ws:
+        # WebSocket de ACS media aún no está conectado
+        return
+
+    try:
+        # Resamplear de 24kHz a 16kHz
+        audio_16khz = resample_audio(audio_b64, input_rate=24000, output_rate=16000)
+
+        # Formato de mensaje para ACS
+        message = {
+            "kind": "AudioData",
+            "audioData": {
+                "data": audio_16khz
+            }
+        }
+
+        # Enviar a ACS
+        await media_ws.send_text(json.dumps(message))
+
+    except Exception as e:
+        print(f"[Audio] Error enviando a ACS: {e}")
 
 
 # ============================================================================
