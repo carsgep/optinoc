@@ -95,6 +95,7 @@ class OutboundCallRequest(BaseModel):
     """Solicitud para hacer una llamada saliente"""
     target_number: str  # Numero de telefono o ID de Teams
     target_type: str = "phone"  # "phone" o "teams"
+    display_name: str = "Optinoc VoiceBot"  # Nombre que aparece en Teams (opcional)
     
 
 class CallInfo(BaseModel):
@@ -209,7 +210,8 @@ async def make_outbound_call(request: OutboundCallRequest):
         call_result = acs_client.create_call(
             target_participant=target,
             callback_url=f"{CALLBACK_URI}/callbacks/acs",
-            media_streaming=media_streaming
+            media_streaming=media_streaming,
+            source_display_name=request.display_name  # Nombre que aparece en Teams
         )
         
         call_id = call_result.call_connection_id
