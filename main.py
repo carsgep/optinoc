@@ -475,7 +475,7 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
     if retry_count > 0:
         print(f"[OpenAI] 🔄 Reintento {retry_count}/{MAX_RETRIES} para {call_id}")
 
-    url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17"
+    url = "wss://api.openai.com/v1/realtime?model=gpt-realtime-mini-2025-12-15"
 
     try:
         async with websockets.connect(
