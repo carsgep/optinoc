@@ -6,12 +6,15 @@ import json
 import asyncio
 import websockets
 import base64
+import io
+import httpx
 from dotenv import load_dotenv
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 import numpy as np
 from scipy import signal
+import wave
 
 # Azure Communication Services
 from azure.communication.callautomation import (
@@ -225,7 +228,9 @@ async def make_outbound_call(request: OutboundCallRequest):
             "target_participant": target,  # Guardar el identificador del participante
             "started_at": datetime.now().isoformat(),
             "openai_ws": None,
-            "bot_muted": False  # Control para silenciar el bot
+            "bot_muted": False,  # Control para silenciar el bot
+            "user_speaking": False,  # Control para interrupciones en tiempo real
+            "whisper_buffer": b""  # Buffer para modo vigía con Whisper
         }
         
         print(f"[CALL] Llamada iniciada: {call_id} -> {request.target_number}")
@@ -420,25 +425,32 @@ async def media_websocket(websocket: WebSocket):
                         print(f"[Media WS] ✅ WebSocket guardado para {call_id} (desde AudioMetadata)")
 
                 elif data["kind"] == "AudioData":
-                    # Audio del usuario - siempre enviar a OpenAI para que pueda escuchar
-                    # comandos de reactivación incluso cuando está silenciado
+                    # Audio del usuario
                     audio_data = data.get("audioData", {}).get("data", "")
 
-                    if call_id and call_id in active_calls:
-                        openai_ws = active_calls[call_id].get("openai_ws")
+                    if call_id and call_id in active_calls and audio_data:
+                        bot_muted = active_calls[call_id].get("bot_muted", False)
 
-                        if openai_ws and audio_data:
-                            # Resamplear de 16kHz (ACS) a 24kHz (OpenAI)
-                            audio_24khz = resample_audio(audio_data, input_rate=16000, output_rate=24000)
+                        if bot_muted:
+                            # MODO VIGÍA: Enviar a Whisper para detectar "OPTI"
+                            # Esto ahorra dinero porque Whisper es más barato que Realtime
+                            await add_audio_to_whisper_buffer(call_id, audio_data)
+                        else:
+                            # MODO ACTIVO: Enviar a OpenAI Realtime
+                            openai_ws = active_calls[call_id].get("openai_ws")
 
-                            # Enviar audio a OpenAI Realtime
-                            await openai_ws.send(json.dumps({
-                                "type": "input_audio_buffer.append",
-                                "audio": audio_24khz
-                            }))
-                        elif not openai_ws:
-                            # OpenAI aun no esta conectado, esperar
-                            await asyncio.sleep(0.1)
+                            if openai_ws:
+                                # Resamplear de 16kHz (ACS) a 24kHz (OpenAI)
+                                audio_24khz = resample_audio(audio_data, input_rate=16000, output_rate=24000)
+
+                                # Enviar audio a OpenAI Realtime
+                                await openai_ws.send(json.dumps({
+                                    "type": "input_audio_buffer.append",
+                                    "audio": audio_24khz
+                                }))
+                            else:
+                                # OpenAI aun no esta conectado, esperar
+                                await asyncio.sleep(0.1)
 
     except Exception as e:
         print(f"[Media WS] Error: {e}")
@@ -634,6 +646,21 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
                         }))
                         await ws.send(json.dumps({"type": "response.create"}))
 
+                # Manejo de interrupciones - usuario empieza a hablar
+                elif event_type == "input_audio_buffer.speech_started":
+                    print(f"[OpenAI] 🎤 Usuario empezó a hablar - INTERRUPCIÓN")
+                    # Marcar que el usuario está hablando
+                    active_calls[call_id]["user_speaking"] = True
+                    # Cancelar la respuesta actual del bot
+                    await ws.send(json.dumps({"type": "response.cancel"}))
+                    # Detener el audio que se está reproduciendo en ACS
+                    await stop_audio_in_acs(call_id)
+
+                elif event_type == "input_audio_buffer.speech_stopped":
+                    print(f"[OpenAI] 🎤 Usuario dejó de hablar")
+                    # El usuario terminó de hablar, permitir que el bot responda
+                    active_calls[call_id]["user_speaking"] = False
+
                 elif event_type == "error":
                     error_data = event.get('error', {})
                     print(f"[OpenAI] ❌ Error event: {error_data}")
@@ -725,6 +752,34 @@ def resample_audio(audio_b64: str, input_rate: int = 24000, output_rate: int = 1
         return audio_b64  # Devolver original si falla
 
 
+async def stop_audio_in_acs(call_id: str):
+    """
+    Envía comando para detener el audio actual en ACS.
+    Esto permite interrumpir al bot cuando el usuario empieza a hablar.
+
+    Args:
+        call_id: ID de la llamada
+    """
+    if call_id not in active_calls:
+        return
+
+    media_ws = active_calls[call_id].get("media_ws")
+    if not media_ws:
+        return
+
+    try:
+        # Comando para detener audio según documentación de ACS
+        message = {
+            "Kind": "StopAudio",
+            "StopAudio": {},
+            "AudioData": None
+        }
+        await media_ws.send_text(json.dumps(message))
+        print(f"[Audio] ⏹️ StopAudio enviado a ACS para {call_id}")
+    except Exception as e:
+        print(f"[Audio] Error enviando StopAudio: {e}")
+
+
 async def send_audio_to_acs(call_id: str, audio_b64: str):
     """
     Envia audio desde OpenAI a ACS a través del WebSocket de media.
@@ -737,9 +792,12 @@ async def send_audio_to_acs(call_id: str, audio_b64: str):
     if call_id not in active_calls:
         return
 
-    # Verificar si el bot está silenciado
+    # Verificar si el bot está silenciado o si hay interrupción activa
     if active_calls[call_id].get("bot_muted", False):
         return  # No enviar audio si está silenciado
+
+    if active_calls[call_id].get("user_speaking", False):
+        return  # No enviar audio si el usuario está hablando (interrupción)
 
     media_ws = active_calls[call_id].get("media_ws")
 
@@ -764,6 +822,174 @@ async def send_audio_to_acs(call_id: str, audio_b64: str):
 
     except Exception as e:
         print(f"[Audio] Error enviando a ACS: {e}")
+
+
+# ============================================================================
+# WHISPER API (Modo vigía - detección de palabra clave)
+# ============================================================================
+
+# Configuración de Whisper
+WHISPER_BUFFER_DURATION_SECONDS = 5  # Cada cuántos segundos enviar a Whisper
+WHISPER_SAMPLE_RATE = 16000  # 16kHz (formato de ACS)
+WHISPER_BYTES_PER_SECOND = WHISPER_SAMPLE_RATE * 2  # 16-bit = 2 bytes por muestra
+WHISPER_BUFFER_SIZE = WHISPER_BUFFER_DURATION_SECONDS * WHISPER_BYTES_PER_SECOND
+
+
+def pcm_to_wav(pcm_data: bytes, sample_rate: int = 16000) -> bytes:
+    """
+    Convierte audio PCM raw a formato WAV para Whisper API.
+
+    Args:
+        pcm_data: Audio en bytes (PCM 16-bit mono)
+        sample_rate: Tasa de muestreo (default 16kHz)
+
+    Returns:
+        Audio en formato WAV como bytes
+    """
+    wav_buffer = io.BytesIO()
+    with wave.open(wav_buffer, 'wb') as wav_file:
+        wav_file.setnchannels(1)  # Mono
+        wav_file.setsampwidth(2)  # 16-bit = 2 bytes
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(pcm_data)
+    wav_buffer.seek(0)
+    return wav_buffer.read()
+
+
+async def transcribe_with_whisper(audio_bytes: bytes) -> str:
+    """
+    Envía audio a OpenAI Whisper API para transcripción.
+
+    Args:
+        audio_bytes: Audio en formato PCM 16-bit, 16kHz, mono
+
+    Returns:
+        Texto transcrito o string vacío si falla
+    """
+    try:
+        # Convertir PCM a WAV
+        wav_data = pcm_to_wav(audio_bytes)
+
+        # Preparar request para Whisper API
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.openai.com/v1/audio/transcriptions",
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}"
+                },
+                files={
+                    "file": ("audio.wav", wav_data, "audio/wav")
+                },
+                data={
+                    "model": "whisper-1",
+                    "language": "es"  # Español
+                },
+                timeout=10.0
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                transcript = result.get("text", "")
+                if transcript:
+                    print(f"[Whisper] 📝 Transcripción: {transcript}")
+                return transcript
+            else:
+                print(f"[Whisper] ❌ Error API: {response.status_code} - {response.text}")
+                return ""
+
+    except Exception as e:
+        print(f"[Whisper] ❌ Error: {e}")
+        return ""
+
+
+async def process_whisper_buffer(call_id: str):
+    """
+    Procesa el buffer de audio acumulado con Whisper y detecta la palabra clave "OPTI".
+    Si detecta "OPTI", reactiva el bot y envía el audio a OpenAI Realtime.
+
+    Args:
+        call_id: ID de la llamada
+    """
+    if call_id not in active_calls:
+        return
+
+    call_data = active_calls[call_id]
+    audio_buffer = call_data.get("whisper_buffer", b"")
+
+    # Verificar si hay suficiente audio
+    if len(audio_buffer) < WHISPER_BUFFER_SIZE:
+        return
+
+    # Extraer el buffer para procesar
+    buffer_to_process = audio_buffer[:WHISPER_BUFFER_SIZE]
+    call_data["whisper_buffer"] = audio_buffer[WHISPER_BUFFER_SIZE:]
+
+    # Transcribir con Whisper
+    transcript = await transcribe_with_whisper(buffer_to_process)
+
+    if not transcript:
+        return
+
+    # Buscar palabra clave "OPTI" (case insensitive)
+    transcript_upper = transcript.upper()
+
+    if "OPTI" in transcript_upper:
+        print(f"[Whisper] 🎯 Palabra clave 'OPTI' detectada!")
+        print(f"[Whisper] 📣 Reactivando bot para call {call_id}")
+
+        # Desmutar el bot
+        call_data["bot_muted"] = False
+
+        # Limpiar el buffer de Whisper
+        call_data["whisper_buffer"] = b""
+
+        # Enviar el contexto a OpenAI Realtime para que responda
+        openai_ws = call_data.get("openai_ws")
+        if openai_ws:
+            try:
+                # Enviar mensaje de texto con lo que dijo el usuario
+                await openai_ws.send(json.dumps({
+                    "type": "conversation.item.create",
+                    "item": {
+                        "type": "message",
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": transcript}]
+                    }
+                }))
+                await openai_ws.send(json.dumps({"type": "response.create"}))
+                print(f"[Whisper] ✅ Contexto enviado a OpenAI Realtime")
+            except Exception as e:
+                print(f"[Whisper] ❌ Error enviando a OpenAI: {e}")
+
+
+async def add_audio_to_whisper_buffer(call_id: str, audio_b64: str):
+    """
+    Agrega audio al buffer de Whisper para procesamiento en modo vigía.
+
+    Args:
+        call_id: ID de la llamada
+        audio_b64: Audio en base64 (PCM 16-bit, 16kHz de ACS)
+    """
+    if call_id not in active_calls:
+        return
+
+    try:
+        # Decodificar audio
+        audio_bytes = base64.b64decode(audio_b64)
+
+        # Agregar al buffer
+        call_data = active_calls[call_id]
+        if "whisper_buffer" not in call_data:
+            call_data["whisper_buffer"] = b""
+
+        call_data["whisper_buffer"] += audio_bytes
+
+        # Procesar si hay suficiente audio
+        if len(call_data["whisper_buffer"]) >= WHISPER_BUFFER_SIZE:
+            await process_whisper_buffer(call_id)
+
+    except Exception as e:
+        print(f"[Whisper] Error agregando al buffer: {e}")
 
 
 # ============================================================================
