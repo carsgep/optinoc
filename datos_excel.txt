@@ -1,0 +1,21 @@
+se requiere una licencia de teams phone por cada usuario al que se requiere que se llame. Se requiere una máquina virtual en el tenant del banco de occidente con tales características. se requiere conectividad VPN entre la máquina virtual optinoc y cada una de las instancias a las que Optinoc estará conectado. se requiere dominio + ssl
+
+	Costos Azure			
+	Servicio	Costo unitario	Cantidad	Total
+	Licencia Teams Phone	$12.00	50	$600.00
+Azure Communication Service	VoIP Calling	$0.004	15000	$60.00
+	Audio Streaming	$0.004	15000	$60.00
+	Direct Routing	$0.004	2000	$8.00
+				
+	Máquina virtual B2s de 2 cores y 4 gb de ram. 64 GB SSD	$22.55	1	$22.55
+				
+	Dominio			
+	Certificado SSL			
+	VPN			
+				
+				
+				
+				
+				
+				
+	Total			$750.55
