@@ -11,7 +11,7 @@ Este agente tiene como objetivo generar y modificar codigo relacionado con Azure
 **Optinoc BOCC Realtime** es un sistema de llamadas automatizadas con IA que actua como puente bidireccional entre:
 
 1. **Azure Communication Services (ACS)** - Manejo de llamadas de voz
-2. **OpenAI GPT-4o Realtime API** - Procesamiento de conversacion con IA
+2. **OpenAI Realtime API** (`gpt-realtime-mini-2025-12-15`) - Procesamiento de conversacion con IA
 
 ### Arquitectura General
 
@@ -49,11 +49,11 @@ Cuando es horario habill (Lunes-Viernes, 8:00-18:00):
 - Requiere Teams Interoperability habilitado en ACS
 - Usa `MicrosoftTeamsUserIdentifier`
 
-### Escenario 2: Fuera de Horario → Llamada PSTN/Cisco
+### Escenario 2: Fuera de Horario → Llamada via Cisco (Direct Routing)
 
 Cuando es fuera de horario laboral o fines de semana:
 - Se llama al tecnico responsable por telefono
-- Puede usar PSTN directo (numero ACS) o SIP trunk a Cisco
+- Usa la infraestructura Cisco del cliente via Direct Routing de ACS
 - Usa `PhoneNumberIdentifier`
 
 ---
@@ -64,10 +64,10 @@ Cuando es fuera de horario laboral o fines de semana:
 |------------|------------|
 | Framework Web | FastAPI |
 | Llamadas | Azure Communication Services |
-| IA Conversacional | OpenAI GPT-4o Realtime API |
+| IA Conversacional | OpenAI Realtime API (`gpt-realtime-mini-2025-12-15`) |
 | Validacion | Pydantic |
 | Colaboracion | Microsoft Teams |
-| Telefonia | PSTN / Cisco SIP |
+| Telefonia | Cisco (Direct Routing via ACS) |
 
 ---
 
@@ -126,9 +126,9 @@ optinoc-bocc-realtime/
    - Habilitar Teams Interoperability en ACS
    - Probar llamadas a usuarios de Teams
 
-5. **Integracion con Cisco SIP**
-   - Configurar SIP trunk entre ACS y Cisco
-   - Pruebas de llamadas via infraestructura telefonica
+5. **Integracion con Cisco via Direct Routing**
+   - Configurar Direct Routing entre ACS y Cisco
+   - Pruebas de llamadas via infraestructura telefonica del cliente
 
 6. **Grabacion de llamadas**
    - Implementar `start_recording()` / `stop_recording()`
@@ -226,11 +226,8 @@ pip install -r requirements.txt
 # Ejecutar servidor
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# Exponer con ngrok (para desarrollo)
-ngrok http 8000
-
-# Ver logs de ngrok
-ngrok http 8000 --log stdout
+# Exponer con cloudflared (para desarrollo)
+cloudflared tunnel --url http://localhost:8000
 ```
 
 ---
