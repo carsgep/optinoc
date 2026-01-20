@@ -12,8 +12,7 @@ Sistema de llamadas automatizadas con IA que actua como puente bidireccional ent
 │   Externo       │     │   Server         │     │   gpt-realtime-mini     │
 └─────────────────┘     └────────┬─────────┘     └─────────────────────────┘
                                │
-                               │ WebSocket
-                               │ Bidireccional
+                               │ WebSocket Bidireccional
                                ▼
                         ┌──────────────────┐
                         │   Azure          │
@@ -48,26 +47,85 @@ optinoc-bocc-realtime/
 ├── main.py                 # Servidor FastAPI principal
 ├── prompt.txt              # System prompt para OPTI
 ├── requirements.txt        # Dependencias Python
-├── CLAUDE.md               # Este archivo
+├── CLAUDE.md               # Este archivo - contexto del proyecto
 ├── README.md               # Documentacion general
 ├── .env                    # Variables de entorno (no versionado)
+│
 ├── functions/              # Funciones para OpenAI function calling
 │   ├── __init__.py
 │   ├── functions.py        # Registro de funciones
 │   └── db2_queries.py      # Consultas a DB2
+│
 ├── db/                     # Configuracion de base de datos
 ├── infra_optinoc/          # Infraestructura Terraform
-├── agents/                 # Documentacion de agentes especializados
-│   ├── claude.md           # Contexto general
-│   └── azure-communication-service/
-│       ├── context.md      # Contexto del agente ACS
-│       ├── SKILLS.md       # Comandos y metodos de ACS
-│       └── PRICING.md      # Precios de ACS
-└── .claude/
-    ├── settings.local.json # Configuracion local de Claude
-    └── commands/           # Comandos personalizados
-        └── acs.md          # Comando para agente ACS
+│
+├── .claude/
+│   ├── settings.local.json # Configuracion local de Claude
+│   └── agents/             # DEFINICIONES de agentes especializados
+│       └── azure-communication-service.md
+│
+└── agents/                 # DOCUMENTACION de agentes
+    └── azure-communication-service/
+        ├── CONTEXT.md      # Arquitectura y contexto
+        ├── SKILLS.md       # Comandos y metodos
+        ├── HISTORY.md      # Historial y decisiones
+        ├── PRICING.md      # Precios de referencia
+        └── scripts/        # Scripts de utilidad
+            ├── start-server.sh
+            ├── start-tunnel.sh
+            ├── test-call.sh
+            ├── list-calls.sh
+            └── check-status.sh
 ```
+
+---
+
+## Agentes Especializados
+
+Este proyecto utiliza agentes especializados para tareas especificas. La estructura de agentes es:
+
+- **`.claude/agents/`** - Contiene las definiciones de los agentes (archivos .md con frontmatter)
+- **`agents/`** - Contiene la documentacion detallada de cada agente
+
+### Como Funcionan los Agentes
+
+1. El archivo en `.claude/agents/<nombre>.md` define el agente con frontmatter (name, description, model, color)
+2. El agente lee la documentacion de `agents/<nombre>/` al inicializarse
+3. Los scripts en `agents/<nombre>/scripts/` proporcionan utilidades ejecutables
+
+### Agente: Azure Communication Service
+
+**Ubicacion:** `.claude/agents/azure-communication-service.md`
+
+**Descripcion:** Agente especializado en Azure Communication Services Call Automation.
+
+**Capacidades:**
+- Creacion y manejo de llamadas (Teams, Direct Routing/Cisco)
+- Media streaming bidireccional
+- Grabacion de llamadas
+- Text-to-Speech y Speech-to-Text
+- Reconocimiento DTMF
+- Eventos de callback
+- Direct Routing para integracion con Cisco
+
+**Cuando usarlo:**
+- Implementar nuevas funcionalidades de llamadas
+- Configurar media streaming
+- Resolver problemas con ACS
+- Agregar soporte para Teams interop
+- Configurar Direct Routing con Cisco
+
+**Documentacion del agente:**
+
+| Archivo | Contenido |
+|---------|-----------|
+| `agents/azure-communication-service/CONTEXT.md` | Arquitectura y contexto del proyecto |
+| `agents/azure-communication-service/SKILLS.md` | Comandos, metodos y ejemplos de codigo |
+| `agents/azure-communication-service/HISTORY.md` | Historial del proyecto y decisiones |
+| `agents/azure-communication-service/PRICING.md` | Precios de referencia de ACS |
+| `agents/azure-communication-service/scripts/` | Scripts de utilidad (.sh) |
+
+---
 
 ## Escenarios de Llamada
 
@@ -119,37 +177,11 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 cloudflared tunnel --url http://localhost:8000
 ```
 
----
-
-## Agentes Especializados
-
-Este proyecto cuenta con agentes especializados que puedes activar para tareas especificas.
-
-### Agente: Azure Communication Service
-
-**Comando:** `/project:acs`
-
-**Descripcion:** Agente especializado en Azure Communication Services Call Automation. Tiene conocimiento profundo sobre:
-
-- Creacion y manejo de llamadas (Teams, Direct Routing/Cisco)
-- Media streaming bidireccional
-- Grabacion de llamadas
-- Text-to-Speech y Speech-to-Text
-- Reconocimiento DTMF
-- Eventos de callback
-- Direct Routing para integracion con Cisco
-
-**Cuando usarlo:**
-- Implementar nuevas funcionalidades de llamadas
-- Configurar media streaming
-- Resolver problemas con ACS
-- Agregar soporte para Teams interop
-- Configurar Direct Routing con Cisco
-
-**Archivos de referencia:**
-- `agents/azure-communication-service/context.md` - Contexto del proyecto
-- `agents/azure-communication-service/SKILLS.md` - Todos los comandos y metodos
-- `agents/azure-communication-service/PRICING.md` - Precios de referencia
+O usar los scripts del agente:
+```bash
+./agents/azure-communication-service/scripts/start-server.sh
+./agents/azure-communication-service/scripts/start-tunnel.sh
+```
 
 ---
 
@@ -182,24 +214,6 @@ El prompt del sistema esta en `prompt.txt`.
 OPTI tiene acceso a funciones para consultar DB2:
 - `funcion_llamada_db2` - Consultas a la base de datos NOC/SOC
 - `set_bot_muted` - Control de silencio del bot
-
----
-
-## Tareas Pendientes
-
-### Alta Prioridad
-1. Completar flujo de audio bidireccional
-2. Configurar Media Streaming con `enable_bidirectional=True`
-3. Implementar llamadas entrantes
-
-### Media Prioridad
-4. Integracion con Teams (Teams Interoperability)
-5. Integracion con Cisco via Direct Routing
-6. Grabacion de llamadas
-
-### Baja Prioridad
-7. Reconocimiento DTMF
-8. Metricas y Logging avanzado
 
 ---
 
