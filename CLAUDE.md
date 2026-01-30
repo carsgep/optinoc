@@ -217,6 +217,50 @@ OPTI tiene acceso a funciones para consultar DB2:
 
 ---
 
+## PoC: SBC Simulado (Direct Routing)
+
+**IMPORTANTE:** Hay un PoC en progreso para simular la infraestructura del cliente (Cisco CUBE) y probar Direct Routing con Azure ACS.
+
+### Documentacion del PoC
+
+| Archivo | Descripcion |
+|---------|-------------|
+| `poc-sbc-simulado/ESTADO_POC.md` | **Estado actual y plan de accion** |
+| `poc-sbc-simulado/AVANCES.md` | Avances detallados |
+| `poc-sbc-simulado/README.md` | Guia de instalacion |
+| `poc-sbc-simulado/docker-compose.yml` | Configuracion Docker |
+
+### Infraestructura del Cliente Real
+
+| Componente | Version | Administrador |
+|------------|---------|---------------|
+| Cisco CUCM | 12.5.1.13900-152 | Proveedor telefonia |
+| Cisco CUBE | IOS XE 16.09.01 (ASR1000) | Banco de Occidente |
+
+### Estado Actual del PoC
+
+- [x] FreePBX corriendo en Docker (simula CUBE)
+- [x] Twilio configurado (simula PSTN del cliente)
+- [x] Llamadas entrantes funcionan (via bore.pub)
+- [ ] VM en Azure con IP publica
+- [ ] Certificado TLS (Let's Encrypt)
+- [ ] Azure ACS Direct Routing configurado
+
+### Siguiente Paso
+
+Crear VM en Azure y configurar Direct Routing. Ver `poc-sbc-simulado/ESTADO_POC.md` para el plan completo.
+
+### Documentacion Relacionada al Cliente
+
+| Archivo | Descripcion |
+|---------|-------------|
+| `guia_reunion_cisco_cube_acs.md` | Guia tecnica completa para reunion con cliente |
+| `informacion_cisco_sbc_acs.md` | Requisitos tecnicos Direct Routing |
+| `cuestionario_tecnico_banco.md` | Preguntas para el equipo tecnico del banco |
+| `requerimientos_banco_occidente.md` | Requerimientos formales del proyecto |
+
+---
+
 ## Referencias
 
 - [Azure Communication Services - Call Automation](https://learn.microsoft.com/en-us/azure/communication-services/concepts/call-automation/call-automation)

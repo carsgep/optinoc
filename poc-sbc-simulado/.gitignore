@@ -1,0 +1,28 @@
+# Variables de entorno con credenciales
+.env
+
+# Certificados SSL
+certs/*.pem
+certs/*.crt
+certs/*.key
+!certs/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# Docker volumes (si se montan localmente)
+data/
+
+# Archivos temporales
+*.tmp
+*.bak
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# Cloudflare tunnel credentials
+*.json
+!docker-compose.yml

@@ -1,0 +1,71 @@
+# PoC: FreePBX como SBC simulando Cisco CUBE
+# Conecta: Twilio (UDP 5060) <-> FreePBX <-> Azure ACS (TLS 5061)
+
+services:
+  freepbx:
+    image: tiredofit/freepbx:latest
+    container_name: freepbx-sbc
+    hostname: sbc-poc
+    restart: unless-stopped
+
+    ports:
+      # SIP UDP - Para Twilio
+      - "5060:5060/udp"
+      # SIP TCP - Alternativa
+      - "5060:5060/tcp"
+      # SIP TLS - Para Azure ACS
+      - "5061:5061/tcp"
+      # RTP Media - Rango de audio
+      - "10000-10100:10000-10100/udp"
+      # Web Admin
+      - "8080:80"
+      - "8443:443"
+
+    environment:
+      # Usar base de datos embebida (no externa)
+      - DB_EMBEDDED=TRUE
+
+      # Configuracion de FreePBX
+      - HTTP_PORT=80
+      - HTTPS_PORT=443
+
+      # Habilitar TLS para SIP
+      - ENABLE_TLS=TRUE
+
+      # Timezone
+      - TZ=America/Bogota
+
+      # RTP Ports
+      - RTP_START=10000
+      - RTP_FINISH=10100
+
+      # Desactivar servicios innecesarios
+      - ENABLE_FAIL2BAN=FALSE
+      - ENABLE_FOP=FALSE
+      - ENABLE_XMPP=FALSE
+
+    volumes:
+      # Persistencia de datos
+      - freepbx-data:/data
+      - freepbx-logs:/var/log
+      # Certificados SSL
+      - ./certs:/certs
+
+    networks:
+      - pbx-network
+
+    healthcheck:
+      test: ["CMD", "asterisk", "-rx", "core show version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  freepbx-data:
+    driver: local
+  freepbx-logs:
+    driver: local
+
+networks:
+  pbx-network:
+    driver: bridge
