@@ -1,291 +1,232 @@
 # Estado del PoC - SBC Simulado con Azure ACS Direct Routing
 
-> **Ultima actualizacion:** 2026-01-30
-> **Objetivo:** Simular la infraestructura del cliente (Cisco CUBE) para probar Direct Routing con Azure ACS
+> **Ultima actualizacion:** 2026-02-03
+> **Estado:** En progreso - Kamailio configurado, pendiente verificar Azure
 
 ---
 
-## Resumen Ejecutivo
+## Resumen de lo Completado
 
-### Que estamos simulando
+### 1. EC2 en AWS ✅
+- **IP:** 35.171.83.237
+- **Tipo:** t3.small (2 vCPU, 2GB RAM)
+- **OS:** Ubuntu 22.04
+- **SSH:** `ssh -i ~/opti-freepbx.pem ubuntu@35.171.83.237`
 
-| Cliente Real | PoC (Simulacion) |
-|--------------|------------------|
-| Cisco CUBE (ASR1000, IOS XE 16.09.01) | FreePBX/Asterisk en Docker |
-| CUCM 12.5.1 (proveedor telefonia) | Twilio (SIP Trunk) |
-| Red PSTN del banco | Numero Twilio |
-| Azure ACS Direct Routing | Azure ACS Direct Routing (mismo) |
+### 2. FreePBX en Docker ✅
+- Corriendo en el contenedor `freepbx-sbc`
+- IP interna: 172.18.0.2
+- Puertos: 5060 UDP/TCP (SIP), 8080 (Web Admin)
+- **Nota:** Puerto 5061 removido del docker-compose (Kamailio lo usa)
 
-### Arquitectura Objetivo del PoC
+### 3. DNS en Cloudflare ✅
+- `sbc.adrianpabonmendoza.com` → 35.171.83.237
+- Proxy: OFF (nube gris)
 
-```
-API Python → Azure ACS → Direct Routing → FreePBX → Twilio → PSTN → Telefono
-   │              │              │            │          │
-   │         (Microsoft)    (TLS 5061)   (simula CUBE) (simula PSTN)
-   │                                         │
-   └─────── OpenAI Realtime ←────────────────┘
-```
+### 4. Certificado Let's Encrypt ✅
+- Ubicacion host: `/etc/letsencrypt/live/sbc.adrianpabonmendoza.com/`
+- Copia para Kamailio: `/etc/kamailio/certs/`
+- CN: sbc.adrianpabonmendoza.com
+- Emisor: Let's Encrypt E7
 
----
-
-## Estado Actual de Componentes
-
-### 1. FreePBX en Docker ✅ FUNCIONANDO
-
-**Ubicacion:** Tu PC local (WSL2)
-
-```bash
-cd /mnt/c/Users/Adrian/Documents/GitHub/optinoc-bocc-realtime/poc-sbc-simulado
-docker compose up -d
-```
-
-**Acceso:** http://localhost:8080/admin
-
-**Puertos:**
-- 5060 UDP/TCP - SIP
-- 5061 TCP - SIP TLS
-- 10000-10100 UDP - RTP
-- 8080/8443 - Web Admin
-
-### 2. Twilio ✅ CONFIGURADO
-
-**Numero:** +19034994580 (o +14846736495)
-
-**SIP Trunk:** `optinoc-poc`
-
-**Credenciales Termination:**
-- Usuario: `freepbx-user`
-- Password: `Opting0c2026!`
-- Dominio: `optinoc-poc.pstn.twilio.com`
-
-**Estado:** Llamadas entrantes funcionan (probado con bore.pub)
-
-### 3. Exposicion a Internet
-
-#### Cloudflare Tunnel ❌ NO FUNCIONA PARA SIP
-- Tunnel `sbc-poc` creado
-- DNS: sbc.adrianpabonmendoza.com, sip.adrianpabonmendoza.com
-- **Problema:** Cloudflare Tunnel no pasa trafico SIP correctamente
-
-#### bore.pub ✅ FUNCIONA PARA PRUEBAS
-```bash
-bore local 5060 --to bore.pub
-```
-- URL temporal: bore.pub:16816 (cambia cada vez)
-- **Limitacion:** Solo TCP, sin TLS (no sirve para Azure ACS)
-
-### 4. Azure ACS Direct Routing ❌ PENDIENTE
-
-**Requisitos no cumplidos:**
-- [ ] Servidor con IP publica fija
-- [ ] FQDN publico apuntando al servidor
-- [ ] Certificado TLS de CA publica (Let's Encrypt)
-- [ ] FreePBX con TLS habilitado en puerto 5061
+### 5. Kamailio como SIP Proxy ✅
+- **Por que Kamailio:** Asterisk/FreePBX pone la IP en los headers Via/Contact, Microsoft espera el FQDN
+- **Kamailio soluciona:** Intercepta el trafico TLS, responde con FQDN en headers
+- **Estado:** Corriendo en puerto 5061 TLS
+- **Configuracion:** `/etc/kamailio/kamailio.cfg`
 
 ---
 
-## Infraestructura del Cliente Real
-
-Informacion recopilada:
-
-| Componente | Detalle | Administrador |
-|------------|---------|---------------|
-| **CUCM** | Version 12.5.1.13900-152 | Proveedor telefonia |
-| **CUBE** | IOS XE 16.09.01 (Fuji) | Banco de Occidente |
-| **Plataforma** | ASR1000 | Banco |
-
-**Alerta:** IOS XE 16.09.01 es anterior a la version recomendada (16.11+). Puede haber problemas con cipher suites TLS 1.2.
-
----
-
-## Plan para Completar el PoC
-
-### Fase 1: Crear VM en Azure
-
-```bash
-# Especificaciones
-- Ubuntu 22.04 LTS
-- Tamano: B1s o B2s
-- IP publica estatica
-- NSG: Abrir puertos 22, 5061 TCP, 10000-20000 UDP
-```
-
-### Fase 2: Configurar DNS en Cloudflare
+## Arquitectura Actual
 
 ```
-Tipo: A
-Nombre: sbc
-Contenido: [IP de la VM]
-Proxy: OFF (nube gris) <-- IMPORTANTE
-```
-
-### Fase 3: Obtener Certificado Let's Encrypt
-
-```bash
-# En la VM
-sudo apt update && sudo apt install certbot -y
-sudo certbot certonly --standalone -d sbc.adrianpabonmendoza.com
-```
-
-### Fase 4: Instalar FreePBX en la VM
-
-```bash
-# Clonar repo
-git clone https://github.com/[tu-repo]/optinoc-bocc-realtime.git
-cd optinoc-bocc-realtime/poc-sbc-simulado
-
-# Copiar certificados
-sudo cp /etc/letsencrypt/live/sbc.adrianpabonmendoza.com/fullchain.pem ./certs/cert.pem
-sudo cp /etc/letsencrypt/live/sbc.adrianpabonmendoza.com/privkey.pem ./certs/key.pem
-
-# Iniciar
-docker compose up -d
-```
-
-### Fase 5: Configurar FreePBX para TLS
-
-1. Acceder a http://[IP_VM]:8080/admin
-2. Admin → Certificate Management → Import certificado
-3. Settings → Asterisk SIP Settings → Enable TLS en puerto 5061
-4. Trunk hacia Twilio (ya configurado, solo verificar)
-
-### Fase 6: Registrar SBC en Azure ACS
-
-```
-Azure Portal → Communication Services → Direct Routing
-
-1. Add SBC:
-   FQDN: sbc.adrianpabonmendoza.com
-   Port: 5061
-
-2. Add Voice Route:
-   Name: Colombia
-   Pattern: ^\+57(\d+)$
-   SBC: sbc.adrianpabonmendoza.com
-   Priority: 1
-```
-
-### Fase 7: Configurar API Python
-
-```bash
-# .env
-ACS_CONNECTION_STRING=endpoint=https://xxx.communication.azure.com/;accesskey=xxx
-CALLBACK_URI=https://[URL_PUBLICA_API]/callbacks/acs
-OPENAI_API_KEY=sk-xxx
-ACS_PHONE_NUMBER=+19034994580  # Numero de Twilio para caller ID
-```
-
-### Fase 8: Probar Llamada
-
-```bash
-curl -X POST http://localhost:8000/calls/outbound \
-  -H "Content-Type: application/json" \
-  -d '{"target_number": "+573232257331"}'
+Microsoft ACS ←─TLS 5061─→ Kamailio ←─UDP 5060─→ FreePBX ←─TCP─→ Twilio
+                              │
+                    (responde OPTIONS
+                     con FQDN correcto)
 ```
 
 ---
 
-## Archivos Importantes del Repositorio
+## Problema Encontrado y Solucion
 
-| Archivo | Descripcion |
-|---------|-------------|
-| `CLAUDE.md` | Contexto general del proyecto |
-| `poc-sbc-simulado/ESTADO_POC.md` | **ESTE ARCHIVO** - Estado actual del PoC |
-| `poc-sbc-simulado/AVANCES.md` | Avances detallados (Cloudflare, FreePBX, etc.) |
-| `poc-sbc-simulado/docker-compose.yml` | Configuracion Docker de FreePBX |
-| `guia_reunion_cisco_cube_acs.md` | Guia tecnica completa Direct Routing |
-| `informacion_cisco_sbc_acs.md` | Requisitos tecnicos del CUBE |
-| `cuestionario_tecnico_banco.md` | Preguntas para el cliente |
-| `requerimientos_banco_occidente.md` | Requerimientos formales |
+### Problema Original
+Asterisk/PJSIP siempre pone la IP (35.171.83.237) en los headers SIP:
+```
+Via: SIP/2.0/TLS 35.171.83.237:5061
+Contact: <sip:xxx@35.171.83.237:5061>
+```
+
+Microsoft rechazaba con error:
+```
+403 Forbidden - SBC certificate is not issued correctly.
+Provided trunk FQDN '35.171.83.237' is not included in certificate's CN
+```
+
+### Solucion Implementada
+Kamailio como proxy TLS que:
+1. Escucha en puerto 5061 con certificado Let's Encrypt
+2. Responde a OPTIONS con el FQDN correcto
+3. Reescribe headers para usar FQDN en lugar de IP
 
 ---
 
-## Credenciales y Configuraciones
+## Configuracion Actual de Kamailio
+
+Archivo: `/etc/kamailio/kamailio.cfg`
+
+```kamailio
+#!KAMAILIO
+enable_tls=yes
+listen=tls:0.0.0.0:5061
+
+loadmodule "tls.so"
+modparam("tls", "config", "/etc/kamailio/tls.cfg")
+
+request_route {
+    # Handle OPTIONS - respond with FQDN
+    if (is_method("OPTIONS")) {
+        append_hf("Contact: <sip:sbc.adrianpabonmendoza.com:5061;transport=tls>\r\n");
+        sl_send_reply("200", "OK");
+        exit;
+    }
+    # Forward other traffic to FreePBX
+    $du = "sip:172.18.0.2:5060";
+    t_relay();
+}
+```
+
+Archivo: `/etc/kamailio/tls.cfg`
+```
+[server:default]
+method = TLSv1.2
+certificate = /etc/kamailio/certs/fullchain.pem
+private_key = /etc/kamailio/certs/privkey.pem
+verify_certificate = no
+```
+
+---
+
+## Lo Que Falta Por Hacer
+
+### 1. Verificar Estado en Azure Portal ⏳
+- Ir a Azure Portal → Communication Services → Direct Routing
+- El SBC deberia mostrar estado "Online" o "TLS: OK"
+- Si sigue en "Unknown", ver siguiente paso
+
+### 2. Si Azure Sigue en Unknown
+Opciones:
+a) **Agregar envio periodico de OPTIONS:** Kamailio debe enviar OPTIONS a Microsoft cada 60 segundos (requiere modulos rtimer + uac)
+b) **Usar script cron:** Enviar OPTIONS manualmente via openssl cada minuto
+
+### 3. Configurar Trunk en FreePBX para Microsoft
+Una vez Azure este Online:
+1. Crear trunk en FreePBX que apunte a Kamailio (172.18.0.1:5061)
+2. Kamailio reenviara a Microsoft con headers correctos
+
+### 4. Probar Llamada Completa
+```
+API Python → ACS → Direct Routing → Kamailio → FreePBX → Twilio → PSTN
+```
+
+---
+
+## Comandos Utiles
+
+### Verificar Kamailio
+```bash
+# Estado
+sudo systemctl status kamailio
+
+# Logs
+sudo tail -f /var/log/syslog | grep kamailio
+
+# Reiniciar
+sudo systemctl restart kamailio
+
+# Verificar TLS
+echo | openssl s_client -connect sbc.adrianpabonmendoza.com:5061 2>/dev/null | openssl x509 -noout -subject
+```
+
+### FreePBX
+```bash
+cd ~/optinoc-bocc-realtime/poc-sbc-simulado
+docker compose ps
+docker compose logs -f
+docker exec -it freepbx-sbc asterisk -rvvv
+```
+
+### Probar OPTIONS a Microsoft (con certificado)
+```bash
+sudo bash -c 'echo "OPTIONS sip:sip.pstnhub.microsoft.com:5061 SIP/2.0
+Via: SIP/2.0/TLS sbc.adrianpabonmendoza.com:5061;branch=z9hG4bK-test
+From: <sip:sbc.adrianpabonmendoza.com>;tag=test
+To: <sip:sip.pstnhub.microsoft.com>
+Call-ID: test@sbc.adrianpabonmendoza.com
+CSeq: 1 OPTIONS
+Contact: <sip:sbc.adrianpabonmendoza.com:5061;transport=tls>
+Max-Forwards: 70
+Content-Length: 0
+
+" | timeout 10 openssl s_client -connect sip.pstnhub.microsoft.com:5061 -cert /etc/kamailio/certs/fullchain.pem -key /etc/kamailio/certs/privkey.pem -quiet 2>&1'
+```
+
+---
+
+## Credenciales y Accesos
+
+### AWS EC2
+- SSH Key: `~/opti-freepbx.pem`
+- Usuario: ubuntu
+- IP: 35.171.83.237
 
 ### Cloudflare
-- Dominio: `adrianpabonmendoza.com`
-- Tunnel ID: `76cc3351-c3d4-42bc-aeaa-fd0224215444`
-- Config: `~/.cloudflared/config-sbc.yml`
+- Dominio: adrianpabonmendoza.com
+- DNS: sbc.adrianpabonmendoza.com → 35.171.83.237
 
 ### Twilio
 - Numero: +19034994580
 - SIP Trunk: optinoc-poc
 - Termination User: freepbx-user
 - Termination Pass: Opting0c2026!
-- Termination Domain: optinoc-poc.pstn.twilio.com
 
-### FreePBX (local)
-- URL: http://localhost:8080/admin
-- Container: freepbx-sbc
-
----
-
-## Comandos Utiles
-
-### FreePBX Local
-```bash
-# Iniciar
-cd /mnt/c/Users/Adrian/Documents/GitHub/optinoc-bocc-realtime/poc-sbc-simulado
-docker compose up -d
-
-# Logs
-docker compose logs -f freepbx
-
-# CLI Asterisk
-docker exec -it freepbx-sbc asterisk -rvvv
-
-# Detener
-docker compose down
-```
-
-### bore (pruebas temporales)
-```bash
-bore local 5060 --to bore.pub
-# Resultado: bore.pub:XXXXX (puerto aleatorio)
-```
-
-### Cloudflare Tunnel (no funciona para SIP pero esta configurado)
-```bash
-nohup cloudflared tunnel --config ~/.cloudflared/config-sbc.yml run sbc-poc > /tmp/sbc-tunnel.log 2>&1 &
-```
+### Azure ACS
+- SBC registrado: sbc.adrianpabonmendoza.com:5061
+- Voice Route: ^\+57(\d+)$ → sbc.adrianpabonmendoza.com
 
 ---
 
-## Problemas Conocidos y Soluciones
+## Security Groups AWS (Puertos Abiertos)
 
-### 1. Cloudflare Tunnel no pasa SIP
-**Solucion:** Usar VM con IP publica + Let's Encrypt
-
-### 2. bore.pub no tiene TLS
-**Solucion:** Solo para pruebas locales, no sirve para Azure ACS
-
-### 3. IOS XE 16.09.01 del cliente
-**Solucion:** Probar primero, si falla TLS actualizar a 16.11+
-
-### 4. Twilio 403 Forbidden en llamadas salientes
-**Causa:** Username incorrecto en trunk
-**Solucion:** Verificar que el trunk use `freepbx-user` (no "Outbound")
+| Puerto | Protocolo | Uso |
+|--------|-----------|-----|
+| 22 | TCP | SSH |
+| 80 | TCP | Let's Encrypt / HTTP |
+| 5060 | TCP/UDP | SIP (Twilio) |
+| 5061 | TCP | SIP TLS (Azure ACS) |
+| 8080 | TCP | FreePBX Web Admin |
+| 10000-20000 | UDP | RTP Audio |
 
 ---
 
-## Siguiente Paso Inmediato
+## Proximos Pasos para Nueva Sesion
 
-**Crear VM en Azure** y continuar con el plan de Fase 1 en adelante.
-
-¿El usuario tiene la VM lista? Si no, crearla con:
-- Ubuntu 22.04
-- IP publica estatica
-- Puertos: 22, 5061 TCP, 10000-20000 UDP
+1. **Verificar Azure Portal** - Ver si SBC esta Online
+2. **Si esta Unknown** - Configurar envio periodico de OPTIONS desde Kamailio
+3. **Si esta Online** - Configurar trunk en FreePBX y probar llamada
+4. **Documentar** - Actualizar este archivo con resultados
 
 ---
 
-## Contacto
+## Archivos Importantes en EC2
 
-Para continuar este PoC en una nueva sesion de Claude Code:
-1. Leer este archivo (`poc-sbc-simulado/ESTADO_POC.md`)
-2. Leer `CLAUDE.md` para contexto general
-3. El siguiente paso es crear/configurar la VM en Azure
+| Archivo | Descripcion |
+|---------|-------------|
+| `/etc/kamailio/kamailio.cfg` | Configuracion principal Kamailio |
+| `/etc/kamailio/tls.cfg` | Configuracion TLS Kamailio |
+| `/etc/kamailio/certs/` | Certificados Let's Encrypt |
+| `~/optinoc-bocc-realtime/poc-sbc-simulado/` | Directorio del PoC |
 
 ---
 
-*Documento actualizado: 2026-01-30*
+*Documento actualizado: 2026-02-03 01:35 UTC*
