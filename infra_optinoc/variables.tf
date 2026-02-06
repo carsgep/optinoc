@@ -32,5 +32,13 @@ variable "my_ip_adresses" {
 }
 
 variable "public_key_path" {
-  type = string
+  type    = string
+  default = "~/.ssh/id_rsa.pub"
+}
+
+variable "vm_size" {
+  description = "Size of the VM"
+  type        = string
+  default     = "Standard_B1ls"
+
 }

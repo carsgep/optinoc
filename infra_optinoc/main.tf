@@ -36,7 +36,7 @@ resource "azurerm_virtual_network" "vnet" {
 resource "azurerm_subnet" "subnet1" {
   name                 = "subnet_vm"
   resource_group_name  = azurerm_resource_group.rg_name.name
-  virtual_network_name = azurerm_virtual_network.vnet.na
+  virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["192.168.10.0/28"] # usable IPs: 192.168.10.1 - 192.168.10.14
 
   # service_endpoints = ["Microsoft.Storage"]
@@ -48,7 +48,7 @@ resource "azurerm_public_ip" "vm_public_ip" {
   name                = "PublicIp1"
   resource_group_name = azurerm_resource_group.rg_name.name
   location            = azurerm_resource_group.rg_name.location
-  allocation_method   = "Dynamic" #The IP address isn't given to the resource at the time of creation when selecting dynamic. The IP is assigned when you associate the public IP address with a resource. The IP address is released when you stop, or delete the resource.
+  allocation_method   = "Static" #The IP address isn't given to the resource at the time of creation when selecting dynamic. The IP is assigned when you associate the public IP address with a resource. The IP address is released when you stop, or delete the resource.
 
   lifecycle {
     create_before_destroy = true # Por recomendacion de la documentacion de terraform
@@ -62,25 +62,28 @@ resource "azurerm_network_security_group" "nsg" {
   location            = azurerm_resource_group.rg_name.location
 
   security_rule {
-    name                    = "internetAccess"
-    priority                = 200
-    direction               = "Inbound"
-    access                  = "Allow"
-    protocol                = "Tcp"
-    source_address_prefix   = "Internet" # acceso de internet a esta vm
-    destination_port_ranges = ["80", "8080", "443"]
-    source_port_range       = "*"
+    name                       = "internetAccess"
+    priority                   = 200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_address_prefix      = "Internet" # acceso de internet a esta vm
+    destination_address_prefix = "*"
+    destination_port_ranges    = ["80", "8080", "443"]
+    source_port_range          = "*"
+
   }
 
   security_rule {
-    name                    = "sshAccess"
-    priority                = 100
-    direction               = "Inbound"
-    access                  = "Allow"
-    protocol                = "Tcp"
-    source_port_range       = "*"
-    destination_port_range  = "22"
-    source_address_prefixes = var.my_ip_adresses
+    name                       = "sshAccess"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefixes    = var.my_ip_adresses
+    destination_address_prefix = "*"
   }
 
   tags = var.tags
@@ -107,7 +110,7 @@ resource "azurerm_network_interface_security_group_association" "nic_sg" {
 }
 
 # ============================================
-# 3. Virtual Machine: VM
+# 3. Virtual Machine: VM, Disks
 # ============================================
 
 resource "azurerm_linux_virtual_machine" "opti_vm" {
@@ -116,7 +119,7 @@ resource "azurerm_linux_virtual_machine" "opti_vm" {
   location            = azurerm_resource_group.rg_name.location
 
   # El tamaño más pequeño y barato de Azure (aprox. $4 USD/mes)
-  size                  = "Standard_B2as"
+  size                  = var.vm_size
   admin_username        = "adminopti"
   network_interface_ids = [azurerm_network_interface.nic_vm.id]
 
@@ -129,7 +132,7 @@ resource "azurerm_linux_virtual_machine" "opti_vm" {
     caching = "ReadWrite"
     # IMPORTANTE: Cambia a Standard_LRS (HDD) para ahorrar más
     # Premium_LRS es más caro.
-    storage_account_type = "Standard_LRS"
+    storage_account_type = "StandardSSD_LRS"
     disk_size_gb         = 30 # El mínimo para Ubuntu suele ser 30GB
   }
 
@@ -139,4 +142,23 @@ resource "azurerm_linux_virtual_machine" "opti_vm" {
     sku       = "22_04-lts"
     version   = "latest"
   }
+}
+
+resource "azurerm_managed_disk" "opti_disk" {
+  name                 = "optiDisk"
+  resource_group_name  = azurerm_resource_group.rg_name.name
+  location             = azurerm_resource_group.rg_name.location
+  storage_account_type = "StandardSSD_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = "40"
+
+  tags = var.tags
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "opti_attach_disk" {
+  managed_disk_id    = azurerm_managed_disk.opti_disk.id
+  virtual_machine_id = azurerm_linux_virtual_machine.opti_vm.id
+
+  lun     = 1 # Logical Unit Number. Needs to be unique within the VM
+  caching = "ReadWrite"
 }
