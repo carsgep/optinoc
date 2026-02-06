@@ -3,7 +3,8 @@ from functions.db2_queries import (
     get_db2_tablespace_usage,
     get_db2_tablespace_summary,
     get_db2_connection_health,
-    get_db2_database_size
+    get_db2_database_size,
+    get_db2_active_connections
 )
 
 # Definición de herramientas (tools) para OpenAI Realtime API
@@ -62,9 +63,23 @@ tools = [
             },
             "required": ["muted"]
         }
+    },
+    {
+        "type": "function",
+        "name": "get_db2_active_connections",
+        "description": "Obtiene el número de conexiones activas a la base de datos DB2. Proporciona una vista general de la carga del sistema.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
     }
 ]
 
+def call_get_db2_active_connections():
+    """Wrapper para get_db2_active_connections que retorna JSON string"""
+    result = get_db2_active_connections()
+    return json.dumps(result, ensure_ascii=False, indent=2)
 
 # Funciones wrapper que retornan strings JSON para OpenAI
 def call_get_db2_tablespace_usage():
@@ -96,7 +111,8 @@ available_functions = {
     "get_db2_tablespace_usage": call_get_db2_tablespace_usage,
     "get_db2_tablespace_summary": call_get_db2_tablespace_summary,
     "get_db2_connection_health": call_get_db2_connection_health,
-    "get_db2_database_size": call_get_db2_database_size
+    "get_db2_database_size": call_get_db2_database_size,
+    "get_db2_active_connections": call_get_db2_active_connections
 }
 
 

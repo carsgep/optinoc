@@ -3,6 +3,79 @@ import ibm_db
 from datetime import datetime
 
 
+def get_db2_active_connections():
+    """
+    Obtiene el número de conexiones activas a DB2
+    Útil para monitorear carga y detectar problemas de conexión
+    """
+    # Usar SYSIBMADM.APPLICATIONS que es más compatible entre versiones de DB2
+    sql = """
+    SELECT
+        APPL_STATUS,
+        COUNT(*) as COUNT_BY_STATUS
+    FROM SYSIBMADM.APPLICATIONS
+    GROUP BY APPL_STATUS
+    """
+
+    conn = get_db2_connection()
+    if not conn:
+        return {
+            "status": "error",
+            "timestamp": datetime.now().isoformat(),
+            "message": "No se pudo conectar a DB2",
+            "voice_ready": "Error de conexión a la base de datos."
+        }
+
+    try:
+        stmt = ibm_db.exec_immediate(conn, sql)
+        if not stmt:
+            return {
+                "status": "error",
+                "timestamp": datetime.now().isoformat(),
+                "message": "Error ejecutando consulta",
+                "voice_ready": "No pude obtener información de conexiones."
+            }
+
+        connections_by_status = {}
+        total = 0
+
+        while True:
+            row = ibm_db.fetch_assoc(stmt)
+            if not row:
+                break
+            status = row.get('APPL_STATUS', 'UNKNOWN')
+            count = int(row.get('COUNT_BY_STATUS', 0))
+            connections_by_status[status] = count
+            total += count
+
+        # Generar mensaje de voz descriptivo
+        if total == 0:
+            voice_text = "No hay conexiones activas a la base de datos."
+        elif total == 1:
+            voice_text = "Hay una conexión activa a la base de datos."
+        else:
+            voice_text = f"Hay {total} conexiones activas a la base de datos."
+
+        return {
+            "status": "ok",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Total de conexiones activas: {total}",
+            "total_connections": total,
+            "connections_by_status": connections_by_status,
+            "voice_ready": voice_text
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "timestamp": datetime.now().isoformat(),
+            "message": f"Error: {str(e)}",
+            "voice_ready": f"Error consultando conexiones: {str(e)}"
+        }
+    finally:
+        if conn:
+            ibm_db.close(conn)
+
 def get_db2_tablespace_usage():
     """
     Obtiene información detallada del uso de tablespaces en DB2
