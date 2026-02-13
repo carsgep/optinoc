@@ -48,7 +48,7 @@ resource "azurerm_public_ip" "vm_public_ip" {
   name                = "PublicIp1"
   resource_group_name = azurerm_resource_group.rg_name.name
   location            = azurerm_resource_group.rg_name.location
-  allocation_method   = "Static" #The IP address isn't given to the resource at the time of creation when selecting dynamic. The IP is assigned when you associate the public IP address with a resource. The IP address is released when you stop, or delete the resource.
+  allocation_method   = "Dynamic" #The IP address isn't given to the resource at the time of creation when selecting dynamic. The IP is assigned when you associate the public IP address with a resource. The IP address is released when you stop, or delete the resource.
 
   lifecycle {
     create_before_destroy = true # Por recomendacion de la documentacion de terraform
@@ -62,28 +62,25 @@ resource "azurerm_network_security_group" "nsg" {
   location            = azurerm_resource_group.rg_name.location
 
   security_rule {
-    name                       = "internetAccess"
-    priority                   = 200
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_address_prefix      = "Internet" # acceso de internet a esta vm
-    destination_address_prefix = "*"
-    destination_port_ranges    = ["80", "8080", "443"]
-    source_port_range          = "*"
-
+    name                    = "internetAccess"
+    priority                = 200
+    direction               = "Inbound"
+    access                  = "Allow"
+    protocol                = "Tcp"
+    source_address_prefix   = "Internet" # acceso de internet a esta vm
+    destination_port_ranges = ["80", "8080", "443"]
+    source_port_range       = "*"
   }
 
   security_rule {
-    name                       = "sshAccess"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefixes    = var.my_ip_adresses
-    destination_address_prefix = "*"
+    name                    = "sshAccess"
+    priority                = 100
+    direction               = "Inbound"
+    access                  = "Allow"
+    protocol                = "Tcp"
+    source_port_range       = "*"
+    destination_port_range  = "22"
+    source_address_prefixes = var.my_ip_adresses
   }
 
   tags = var.tags
@@ -119,7 +116,7 @@ resource "azurerm_linux_virtual_machine" "opti_vm" {
   location            = azurerm_resource_group.rg_name.location
 
   # El tamaño más pequeño y barato de Azure (aprox. $4 USD/mes)
-  size                  = var.vm_size
+  size                  = "Standard_B2as"
   admin_username        = "adminopti"
   network_interface_ids = [azurerm_network_interface.nic_vm.id]
 
