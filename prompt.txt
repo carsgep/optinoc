@@ -95,3 +95,29 @@ Recomendación:
 1.	Evaluar particionamiento por rango de fecha.
 2.	Implementar política de archivado de información mayor a 5 años.
 3.	Validar posibilidad de agregar nuevo datafile al tablespace.
+
+CASO DE USO 2
+Índices inutilizables en Oracle
+Respuesta simulada:
+Se detectó que el índice IDX_CLIENTE_FECHA asociado a la tabla TRANSACCIONES se encuentra en estado UNUSABLE.
+Diagnóstico:
+El índice quedó inutilizable después de una operación de carga masiva (direct path insert) ejecutada sin la opción UPDATE INDEXES.
+Posible causa:
+•	TRUNCATE TABLE sin rebuild posterior.
+•	Carga masiva con APPEND.
+•	Movimiento de tabla (ALTER TABLE MOVE).
+Impacto:
+Las consultas que dependen de este índice están ejecutando full table scans, incrementando el consumo de CPU y tiempo de respuesta en un 35%
+
+CASO DE USO 3
+Sesiones de larga duración en Oracle
+Respuesta simulada:
+Se identificaron 3 sesiones activas con duración superior a 2 horas ejecutando consultas sobre la tabla FACTURACION_MENSUAL.
+Diagnóstico:
+Las sesiones presentan estado ACTIVE con evento de espera "db file sequential read" y alto consumo de I/O.
+Posible causa:
+•	Consulta sin uso adecuado de índices.
+•	Plan de ejecución con full table scan.
+•	Estadísticas desactualizadas.
+Impacto:
+Bloqueo de recursos y degradación de rendimiento para otras sesiones concurrentes.
