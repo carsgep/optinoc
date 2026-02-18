@@ -10,8 +10,8 @@ import io
 import httpx
 from dotenv import load_dotenv
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, List, Union
+from pydantic import BaseModel, model_validator
 import numpy as np
 from scipy import signal
 import wave
@@ -95,17 +95,36 @@ active_calls: dict = {}
 # ============================================================================
 
 class OutboundCallRequest(BaseModel):
-    """Solicitud para hacer una llamada saliente"""
-    target_number: str  # Numero de telefono o ID de Teams
-    target_type: str = "phone"  # "phone" o "teams"
-    display_name: str = "Optinoc VoiceBot"  # Nombre que aparece en Teams (opcional)
+    """Solicitud para hacer una llamada saliente.
     
+    Acepta un solo destino (target_number) o múltiples (target_numbers) para llamadas grupales.
+    """
+    target_number: Optional[str] = None
+    target_numbers: Optional[List[str]] = None
+    target_type: str = "phone"  # "phone" o "teams"
+    display_name: str = "Optinoc VoiceBot"
+
+    @model_validator(mode="after")
+    def validate_targets(self):
+        if not self.target_number and not self.target_numbers:
+            raise ValueError("Debes proporcionar target_number o target_numbers")
+        if self.target_number and self.target_numbers:
+            raise ValueError("Usa target_number (un destino) o target_numbers (varios), no ambos")
+        return self
+
+    @property
+    def all_targets(self) -> List[str]:
+        """Retorna la lista unificada de destinos."""
+        if self.target_numbers:
+            return self.target_numbers
+        return [self.target_number]
+
 
 class CallInfo(BaseModel):
     """Informacion de una llamada"""
     call_id: str
     status: str
-    target: str
+    targets: List[str]
     started_at: str
 
 
@@ -144,12 +163,14 @@ async def test_websocket():
 @app.post("/calls/outbound", response_model=CallInfo)
 async def make_outbound_call(request: OutboundCallRequest):
     """
-    Inicia una llamada saliente a un numero de telefono o usuario de Teams.
+    Inicia una llamada saliente a uno o varios destinos.
     
-    - Para telefono: target_number = "+573001234567"
-    - Para Teams: target_number = "user@empresa.com" (requiere Teams interop)
+    - Un destino:   {"target_number": "GUID-object-id", "target_type": "teams"}
+    - Varios (grupal): {"target_numbers": ["GUID-1", "GUID-2"], "target_type": "teams"}
+    - Telefono:     {"target_number": "+573001234567", "target_type": "phone"}
     
-    NOTA: Requiere configurar ACS con un numero de telefono comprado.
+    En llamadas grupales de Teams, todos los participantes reciben la llamada
+    y se unen a la misma sesión con OPTI.
     """
     if not acs_client:
         raise HTTPException(status_code=503, detail="ACS no configurado. Configura ACS_CONNECTION_STRING en .env")
@@ -161,40 +182,38 @@ async def make_outbound_call(request: OutboundCallRequest):
         )
     
     try:
-        # Determinar el tipo de destino
+        targets = request.all_targets
+        participants = []
+
         if request.target_type == "teams":
-            # Llamada a Teams (requiere Teams interoperability habilitado en ACS)
             from azure.communication.callautomation import MicrosoftTeamsUserIdentifier, CommunicationCloudEnvironment
 
-            # Determinar el formato del identificador
-            if "@" in request.target_number and "." in request.target_number:
-                # Es un email/UPN (user@domain.com) - NO soportado directamente, necesita Object ID
+            if not TENANT_ID:
                 raise HTTPException(
-                    status_code=400,
-                    detail="Para llamadas a Teams usa el Object ID del usuario (GUID), no el email/UPN"
+                    status_code=503,
+                    detail="TENANT_ID no configurado en .env. Necesario para llamadas a Teams"
                 )
-            else:
-                # Es un Object ID
-                if not TENANT_ID:
-                    raise HTTPException(
-                        status_code=503,
-                        detail="TENANT_ID no configurado en .env. Necesario para llamadas a Teams"
-                    )
-                user_id = request.target_number
-                print(f"[CALL] Usando Object ID para Teams: {user_id}")
-                print(f"[CALL] Tenant ID: {TENANT_ID}")
 
-            # Crear identificador de Teams con cloud environment
-            target = MicrosoftTeamsUserIdentifier(
-                user_id=user_id,
-                cloud=CommunicationCloudEnvironment.PUBLIC
-            )
+            for t in targets:
+                if "@" in t and "." in t:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Usa el Object ID (GUID), no el email/UPN: {t}"
+                    )
+                print(f"[CALL] Participante Teams: {t}")
+                participants.append(
+                    MicrosoftTeamsUserIdentifier(
+                        user_id=t,
+                        cloud=CommunicationCloudEnvironment.PUBLIC
+                    )
+                )
         else:
-            # Llamada telefonica PSTN
-            target = PhoneNumberIdentifier(request.target_number)
-        
-        # Configurar media streaming para audio bidireccional
-        # Convertir https:// a wss:// para WebSocket
+            for t in targets:
+                participants.append(PhoneNumberIdentifier(t))
+
+        print(f"[CALL] Tenant ID: {TENANT_ID}")
+        print(f"[CALL] Total participantes: {len(participants)}")
+
         websocket_url = CALLBACK_URI.replace("https://", "wss://").replace("http://", "ws://")
         media_streaming = MediaStreamingOptions(
             transport_url=f"{websocket_url}/ws/media",
@@ -202,43 +221,41 @@ async def make_outbound_call(request: OutboundCallRequest):
             content_type=MediaStreamingContentType.AUDIO,
             audio_channel_type=MediaStreamingAudioChannelType.MIXED,
             start_media_streaming=True,
-            enable_bidirectional=True,  # CRÍTICO: Habilita envío de audio de vuelta
-            audio_format=AudioFormat.PCM16_K_MONO  # 16kHz PCM mono
+            enable_bidirectional=True,
+            audio_format=AudioFormat.PCM16_K_MONO
         )
         print(f"[CALL] WebSocket URL: {websocket_url}/ws/media")
         print(f"[CALL] Bidirectional audio: ENABLED")
 
-        # Crear la llamada
-        # NOTA: Para PSTN necesitas especificar source_caller_id_number (tu numero ACS)
+        # ACS create_call acepta una lista de participantes para llamadas grupales
         call_result = acs_client.create_call(
-            target_participant=target,
+            target_participant=participants if len(participants) > 1 else participants[0],
             callback_url=f"{CALLBACK_URI}/callbacks/acs",
             media_streaming=media_streaming,
-            source_display_name=request.display_name  # Nombre que aparece en Teams
+            source_display_name=request.display_name
         )
         
         call_id = call_result.call_connection_id
         
-        # Guardar info de la llamada
         active_calls[call_id] = {
             "call_id": call_id,
             "status": "connecting",
-            "target": request.target_number,
+            "targets": targets,
             "target_type": request.target_type,
-            "target_participant": target,  # Guardar el identificador del participante
+            "target_participants": participants,
             "started_at": datetime.now().isoformat(),
             "openai_ws": None,
-            "bot_muted": False,  # Control para silenciar el bot
-            "user_speaking": False,  # Control para interrupciones en tiempo real
-            "whisper_buffer": b""  # Buffer para modo vigía con Whisper
+            "bot_muted": False,
+            "user_speaking": False,
+            "whisper_buffer": b""
         }
         
-        print(f"[CALL] Llamada iniciada: {call_id} -> {request.target_number}")
+        print(f"[CALL] Llamada iniciada: {call_id} -> {targets}")
         
         return CallInfo(
             call_id=call_id,
             status="connecting",
-            target=request.target_number,
+            targets=targets,
             started_at=active_calls[call_id]["started_at"]
         )
         
@@ -256,7 +273,7 @@ async def list_calls():
             {
                 "call_id": call_id,
                 "status": info["status"],
-                "target": info["target"],
+                "targets": info["targets"],
                 "started_at": info["started_at"]
             }
             for call_id, info in active_calls.items()
