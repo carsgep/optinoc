@@ -9,7 +9,7 @@ import base64
 import io
 import httpx
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Union
 from pydantic import BaseModel, model_validator
 import numpy as np
@@ -37,6 +37,11 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ACS_CONNECTION_STRING = os.getenv("ACS_CONNECTION_STRING")
 CALLBACK_URI = os.getenv("CALLBACK_URI")  # URL publica - usar ngrok para desarrollo
 TENANT_ID = os.getenv("TENANT_ID")  # Microsoft 365 Tenant ID para llamadas a Teams
+
+# Microsoft Graph API (para crear reuniones de Teams con link compartible)
+GRAPH_CLIENT_ID = os.getenv("GRAPH_CLIENT_ID")
+GRAPH_CLIENT_SECRET = os.getenv("GRAPH_CLIENT_SECRET")
+MEETING_ORGANIZER_ID = os.getenv("MEETING_ORGANIZER_ID")  # Object ID del usuario organizador
 
 # Cargar prompt
 def load_prompt():
@@ -75,6 +80,12 @@ async def lifespan(app: FastAPI):
         print("     2. Ejecuta: ngrok http 8000")
         print("     3. Copia la URL https y ponla en .env como CALLBACK_URI")
     
+    if graph_configured():
+        print(f"[OK] Graph API configurado (organizer: {MEETING_ORGANIZER_ID})")
+    else:
+        print("[!!] Graph API no configurado (generate_meeting_link no disponible)")
+        print("     Necesitas: GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, MEETING_ORGANIZER_ID")
+    
     print("="*50 + "\n")
     
     yield
@@ -91,6 +102,77 @@ active_calls: dict = {}
 
 
 # ============================================================================
+# MICROSOFT GRAPH API (Reuniones de Teams)
+# ============================================================================
+
+_graph_token_cache: dict = {"access_token": None, "expires_at": 0}
+
+
+def graph_configured() -> bool:
+    return all([GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, TENANT_ID, MEETING_ORGANIZER_ID])
+
+
+async def get_graph_token() -> str:
+    """Obtiene un access token de Microsoft Graph via client credentials flow."""
+    now = datetime.now(timezone.utc).timestamp()
+    if _graph_token_cache["access_token"] and _graph_token_cache["expires_at"] > now + 60:
+        return _graph_token_cache["access_token"]
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token",
+            data={
+                "grant_type": "client_credentials",
+                "client_id": GRAPH_CLIENT_ID,
+                "client_secret": GRAPH_CLIENT_SECRET,
+                "scope": "https://graph.microsoft.com/.default",
+            },
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    _graph_token_cache["access_token"] = data["access_token"]
+    _graph_token_cache["expires_at"] = now + data.get("expires_in", 3600)
+    return data["access_token"]
+
+
+async def create_teams_meeting(subject: str = "OPTI - Llamada NOC") -> dict:
+    """
+    Crea una Online Meeting en Teams via Microsoft Graph API.
+
+    Requiere App Registration con permiso OnlineMeetings.ReadWrite.All (application).
+
+    Returns:
+        dict con joinWebUrl, meetingId, subject, etc.
+    """
+    token = await get_graph_token()
+
+    now = datetime.now(timezone.utc)
+    body = {
+        "subject": subject,
+        "startDateTime": now.isoformat(),
+        "endDateTime": (now + timedelta(hours=1)).isoformat(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"https://graph.microsoft.com/v1.0/users/{MEETING_ORGANIZER_ID}/onlineMeetings",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json=body,
+            timeout=15.0,
+        )
+        resp.raise_for_status()
+        meeting = resp.json()
+
+    print(f"[Graph] Reunión creada: {meeting.get('joinWebUrl', '')[:80]}...")
+    return meeting
+
+
+# ============================================================================
 # MODELOS
 # ============================================================================
 
@@ -104,6 +186,8 @@ class OutboundCallRequest(BaseModel):
     target_type: str = "phone"  # "phone" o "teams"
     display_name: str = "Optinoc VoiceBot"
     first_message: Optional[str] = None
+    generate_meeting_link: bool = False
+    meeting_subject: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_targets(self):
@@ -127,6 +211,7 @@ class CallInfo(BaseModel):
     status: str
     targets: List[str]
     started_at: str
+    join_url: Optional[str] = None
 
 
 # ============================================================================
@@ -185,6 +270,19 @@ async def make_outbound_call(request: OutboundCallRequest):
     try:
         targets = request.all_targets
         participants = []
+        join_url: Optional[str] = None
+
+        # Crear reunión de Teams si se solicita un link compartible
+        if request.generate_meeting_link:
+            if not graph_configured():
+                raise HTTPException(
+                    status_code=503,
+                    detail="Graph API no configurado. Necesitas GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, TENANT_ID y MEETING_ORGANIZER_ID en .env"
+                )
+            subject = request.meeting_subject or "OPTI - Llamada NOC"
+            meeting = await create_teams_meeting(subject=subject)
+            join_url = meeting.get("joinWebUrl")
+            print(f"[CALL] Meeting link generado: {join_url}")
 
         if request.target_type == "teams":
             from azure.communication.callautomation import MicrosoftTeamsUserIdentifier, CommunicationCloudEnvironment
@@ -228,7 +326,6 @@ async def make_outbound_call(request: OutboundCallRequest):
         print(f"[CALL] WebSocket URL: {websocket_url}/ws/media")
         print(f"[CALL] Bidirectional audio: ENABLED")
 
-        # ACS create_call acepta una lista de participantes para llamadas grupales
         call_result = acs_client.create_call(
             target_participant=participants if len(participants) > 1 else participants[0],
             callback_url=f"{CALLBACK_URI}/callbacks/acs",
@@ -249,7 +346,8 @@ async def make_outbound_call(request: OutboundCallRequest):
             "bot_muted": False,
             "user_speaking": False,
             "whisper_buffer": b"",
-            "first_message": request.first_message
+            "first_message": request.first_message,
+            "join_url": join_url
         }
         
         print(f"[CALL] Llamada iniciada: {call_id} -> {targets}")
@@ -258,7 +356,8 @@ async def make_outbound_call(request: OutboundCallRequest):
             call_id=call_id,
             status="connecting",
             targets=targets,
-            started_at=active_calls[call_id]["started_at"]
+            started_at=active_calls[call_id]["started_at"],
+            join_url=join_url
         )
         
     except Exception as e:
@@ -276,7 +375,8 @@ async def list_calls():
                 "call_id": call_id,
                 "status": info["status"],
                 "targets": info["targets"],
-                "started_at": info["started_at"]
+                "started_at": info["started_at"],
+                "join_url": info.get("join_url")
             }
             for call_id, info in active_calls.items()
         ]
