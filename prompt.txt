@@ -117,7 +117,7 @@ Recomendación:
 2.	Implementar política de archivado de información mayor a 5 años.
 3.	Validar posibilidad de agregar nuevo datafile al tablespace.
 
-CASO DE USO 2 
+CASO DE USO 2
 
 Se detectó que el índice IDX_CLIENTE_FECHA asociado a la tabla TRANSACCIONES se encuentra en estado UNUSABLE.
 Diagnóstico:
