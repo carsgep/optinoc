@@ -9,9 +9,9 @@ import base64
 import io
 import httpx
 from dotenv import load_dotenv
-from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel
+from datetime import datetime, timedelta, timezone
+from typing import Optional, List, Union
+from pydantic import BaseModel, model_validator
 import numpy as np
 from scipy import signal
 import wave
@@ -37,6 +37,11 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ACS_CONNECTION_STRING = os.getenv("ACS_CONNECTION_STRING")
 CALLBACK_URI = os.getenv("CALLBACK_URI")  # URL publica - usar ngrok para desarrollo
 TENANT_ID = os.getenv("TENANT_ID")  # Microsoft 365 Tenant ID para llamadas a Teams
+
+# Microsoft Graph API (para crear reuniones de Teams con link compartible)
+GRAPH_CLIENT_ID = os.getenv("GRAPH_CLIENT_ID")
+GRAPH_CLIENT_SECRET = os.getenv("GRAPH_CLIENT_SECRET")
+MEETING_ORGANIZER_ID = os.getenv("MEETING_ORGANIZER_ID")  # Object ID del usuario organizador
 
 # Cargar prompt
 def load_prompt():
@@ -75,6 +80,12 @@ async def lifespan(app: FastAPI):
         print("     2. Ejecuta: ngrok http 8000")
         print("     3. Copia la URL https y ponla en .env como CALLBACK_URI")
     
+    if graph_configured():
+        print(f"[OK] Graph API configurado (organizer: {MEETING_ORGANIZER_ID})")
+    else:
+        print("[!!] Graph API no configurado (generate_meeting_link no disponible)")
+        print("     Necesitas: GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, MEETING_ORGANIZER_ID")
+    
     print("="*50 + "\n")
     
     yield
@@ -91,22 +102,116 @@ active_calls: dict = {}
 
 
 # ============================================================================
+# MICROSOFT GRAPH API (Reuniones de Teams)
+# ============================================================================
+
+_graph_token_cache: dict = {"access_token": None, "expires_at": 0}
+
+
+def graph_configured() -> bool:
+    return all([GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, TENANT_ID, MEETING_ORGANIZER_ID])
+
+
+async def get_graph_token() -> str:
+    """Obtiene un access token de Microsoft Graph via client credentials flow."""
+    now = datetime.now(timezone.utc).timestamp()
+    if _graph_token_cache["access_token"] and _graph_token_cache["expires_at"] > now + 60:
+        return _graph_token_cache["access_token"]
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token",
+            data={
+                "grant_type": "client_credentials",
+                "client_id": GRAPH_CLIENT_ID,
+                "client_secret": GRAPH_CLIENT_SECRET,
+                "scope": "https://graph.microsoft.com/.default",
+            },
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    _graph_token_cache["access_token"] = data["access_token"]
+    _graph_token_cache["expires_at"] = now + data.get("expires_in", 3600)
+    return data["access_token"]
+
+
+async def create_teams_meeting(subject: str = "OPTI - Llamada NOC") -> dict:
+    """
+    Crea una Online Meeting en Teams via Microsoft Graph API.
+
+    Requiere App Registration con permiso OnlineMeetings.ReadWrite.All (application).
+
+    Returns:
+        dict con joinWebUrl, meetingId, subject, etc.
+    """
+    token = await get_graph_token()
+
+    now = datetime.now(timezone.utc)
+    body = {
+        "subject": subject,
+        "startDateTime": now.isoformat(),
+        "endDateTime": (now + timedelta(hours=1)).isoformat(),
+    }
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"https://graph.microsoft.com/v1.0/users/{MEETING_ORGANIZER_ID}/onlineMeetings",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json=body,
+            timeout=15.0,
+        )
+        resp.raise_for_status()
+        meeting = resp.json()
+
+    print(f"[Graph] Reunión creada: {meeting.get('joinWebUrl', '')[:80]}...")
+    return meeting
+
+
+# ============================================================================
 # MODELOS
 # ============================================================================
 
 class OutboundCallRequest(BaseModel):
-    """Solicitud para hacer una llamada saliente"""
-    target_number: str  # Numero de telefono o ID de Teams
-    target_type: str = "phone"  # "phone" o "teams"
-    display_name: str = "Optinoc VoiceBot"  # Nombre que aparece en Teams (opcional)
+    """Solicitud para hacer una llamada saliente.
     
+    Acepta un solo destino (target_number) o múltiples (target_numbers) para llamadas grupales.
+    """
+    target_number: Optional[str] = None
+    target_numbers: Optional[List[str]] = None
+    target_type: str = "phone"  # "phone" o "teams"
+    display_name: str = "Optinoc VoiceBot"
+    first_message: Optional[str] = None
+    generate_meeting_link: bool = False
+    meeting_subject: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_targets(self):
+        if not self.target_number and not self.target_numbers:
+            raise ValueError("Debes proporcionar target_number o target_numbers")
+        if self.target_number and self.target_numbers:
+            raise ValueError("Usa target_number (un destino) o target_numbers (varios), no ambos")
+        return self
+
+    @property
+    def all_targets(self) -> List[str]:
+        """Retorna la lista unificada de destinos."""
+        if self.target_numbers:
+            return self.target_numbers
+        return [self.target_number]
+
 
 class CallInfo(BaseModel):
     """Informacion de una llamada"""
     call_id: str
     status: str
-    target: str
+    targets: List[str]
     started_at: str
+    join_url: Optional[str] = None
 
 
 # ============================================================================
@@ -144,12 +249,14 @@ async def test_websocket():
 @app.post("/calls/outbound", response_model=CallInfo)
 async def make_outbound_call(request: OutboundCallRequest):
     """
-    Inicia una llamada saliente a un numero de telefono o usuario de Teams.
+    Inicia una llamada saliente a uno o varios destinos.
     
-    - Para telefono: target_number = "+573001234567"
-    - Para Teams: target_number = "user@empresa.com" (requiere Teams interop)
+    - Un destino:   {"target_number": "GUID-object-id", "target_type": "teams"}
+    - Varios (grupal): {"target_numbers": ["GUID-1", "GUID-2"], "target_type": "teams"}
+    - Telefono:     {"target_number": "+573001234567", "target_type": "phone"}
     
-    NOTA: Requiere configurar ACS con un numero de telefono comprado.
+    En llamadas grupales de Teams, todos los participantes reciben la llamada
+    y se unen a la misma sesión con OPTI.
     """
     if not acs_client:
         raise HTTPException(status_code=503, detail="ACS no configurado. Configura ACS_CONNECTION_STRING en .env")
@@ -161,40 +268,51 @@ async def make_outbound_call(request: OutboundCallRequest):
         )
     
     try:
-        # Determinar el tipo de destino
+        targets = request.all_targets
+        participants = []
+        join_url: Optional[str] = None
+
+        # Crear reunión de Teams si se solicita un link compartible
+        if request.generate_meeting_link:
+            if not graph_configured():
+                raise HTTPException(
+                    status_code=503,
+                    detail="Graph API no configurado. Necesitas GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, TENANT_ID y MEETING_ORGANIZER_ID en .env"
+                )
+            subject = request.meeting_subject or "OPTI - Llamada NOC"
+            meeting = await create_teams_meeting(subject=subject)
+            join_url = meeting.get("joinWebUrl")
+            print(f"[CALL] Meeting link generado: {join_url}")
+
         if request.target_type == "teams":
-            # Llamada a Teams (requiere Teams interoperability habilitado en ACS)
             from azure.communication.callautomation import MicrosoftTeamsUserIdentifier, CommunicationCloudEnvironment
 
-            # Determinar el formato del identificador
-            if "@" in request.target_number and "." in request.target_number:
-                # Es un email/UPN (user@domain.com) - NO soportado directamente, necesita Object ID
+            if not TENANT_ID:
                 raise HTTPException(
-                    status_code=400,
-                    detail="Para llamadas a Teams usa el Object ID del usuario (GUID), no el email/UPN"
+                    status_code=503,
+                    detail="TENANT_ID no configurado en .env. Necesario para llamadas a Teams"
                 )
-            else:
-                # Es un Object ID
-                if not TENANT_ID:
-                    raise HTTPException(
-                        status_code=503,
-                        detail="TENANT_ID no configurado en .env. Necesario para llamadas a Teams"
-                    )
-                user_id = request.target_number
-                print(f"[CALL] Usando Object ID para Teams: {user_id}")
-                print(f"[CALL] Tenant ID: {TENANT_ID}")
 
-            # Crear identificador de Teams con cloud environment
-            target = MicrosoftTeamsUserIdentifier(
-                user_id=user_id,
-                cloud=CommunicationCloudEnvironment.PUBLIC
-            )
+            for t in targets:
+                if "@" in t and "." in t:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Usa el Object ID (GUID), no el email/UPN: {t}"
+                    )
+                print(f"[CALL] Participante Teams: {t}")
+                participants.append(
+                    MicrosoftTeamsUserIdentifier(
+                        user_id=t,
+                        cloud=CommunicationCloudEnvironment.PUBLIC
+                    )
+                )
         else:
-            # Llamada telefonica PSTN
-            target = PhoneNumberIdentifier(request.target_number)
-        
-        # Configurar media streaming para audio bidireccional
-        # Convertir https:// a wss:// para WebSocket
+            for t in targets:
+                participants.append(PhoneNumberIdentifier(t))
+
+        print(f"[CALL] Tenant ID: {TENANT_ID}")
+        print(f"[CALL] Total participantes: {len(participants)}")
+
         websocket_url = CALLBACK_URI.replace("https://", "wss://").replace("http://", "ws://")
         media_streaming = MediaStreamingOptions(
             transport_url=f"{websocket_url}/ws/media",
@@ -202,44 +320,44 @@ async def make_outbound_call(request: OutboundCallRequest):
             content_type=MediaStreamingContentType.AUDIO,
             audio_channel_type=MediaStreamingAudioChannelType.MIXED,
             start_media_streaming=True,
-            enable_bidirectional=True,  # CRÍTICO: Habilita envío de audio de vuelta
-            audio_format=AudioFormat.PCM16_K_MONO  # 16kHz PCM mono
+            enable_bidirectional=True,
+            audio_format=AudioFormat.PCM16_K_MONO
         )
         print(f"[CALL] WebSocket URL: {websocket_url}/ws/media")
         print(f"[CALL] Bidirectional audio: ENABLED")
 
-        # Crear la llamada
-        # NOTA: Para PSTN necesitas especificar source_caller_id_number (tu numero ACS)
         call_result = acs_client.create_call(
-            target_participant=target,
+            target_participant=participants if len(participants) > 1 else participants[0],
             callback_url=f"{CALLBACK_URI}/callbacks/acs",
             media_streaming=media_streaming,
-            source_display_name=request.display_name  # Nombre que aparece en Teams
+            source_display_name=request.display_name
         )
         
         call_id = call_result.call_connection_id
         
-        # Guardar info de la llamada
         active_calls[call_id] = {
             "call_id": call_id,
             "status": "connecting",
-            "target": request.target_number,
+            "targets": targets,
             "target_type": request.target_type,
-            "target_participant": target,  # Guardar el identificador del participante
+            "target_participants": participants,
             "started_at": datetime.now().isoformat(),
             "openai_ws": None,
-            "bot_muted": False,  # Control para silenciar el bot
-            "user_speaking": False,  # Control para interrupciones en tiempo real
-            "whisper_buffer": b""  # Buffer para modo vigía con Whisper
+            "bot_muted": False,
+            "user_speaking": False,
+            "whisper_buffer": b"",
+            "first_message": request.first_message,
+            "join_url": join_url
         }
         
-        print(f"[CALL] Llamada iniciada: {call_id} -> {request.target_number}")
+        print(f"[CALL] Llamada iniciada: {call_id} -> {targets}")
         
         return CallInfo(
             call_id=call_id,
             status="connecting",
-            target=request.target_number,
-            started_at=active_calls[call_id]["started_at"]
+            targets=targets,
+            started_at=active_calls[call_id]["started_at"],
+            join_url=join_url
         )
         
     except Exception as e:
@@ -256,8 +374,9 @@ async def list_calls():
             {
                 "call_id": call_id,
                 "status": info["status"],
-                "target": info["target"],
-                "started_at": info["started_at"]
+                "targets": info["targets"],
+                "started_at": info["started_at"],
+                "join_url": info.get("join_url")
             }
             for call_id, info in active_calls.items()
         ]
@@ -528,13 +647,17 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
             
             # Saludo inicial - solo en la primera conexión (no en reconexiones)
             if retry_count == 0:
-                await asyncio.sleep(2.0)  # Esperar 2 segundos antes de saludar
+                first_msg = active_calls[call_id].get("first_message")
+                prompt_text = first_msg if first_msg else "Saluda al usuario brevemente"
+                print(f"[OpenAI] First message: {prompt_text}")
+
+                await asyncio.sleep(2.0)
                 await ws.send(json.dumps({
                     "type": "conversation.item.create",
                     "item": {
                         "type": "message",
                         "role": "user",
-                        "content": [{"type": "input_text", "text": "Saluda al usuario brevemente"}]
+                        "content": [{"type": "input_text", "text": prompt_text}]
                     }
                 }))
                 await ws.send(json.dumps({"type": "response.create"}))
