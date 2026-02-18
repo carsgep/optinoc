@@ -103,6 +103,7 @@ class OutboundCallRequest(BaseModel):
     target_numbers: Optional[List[str]] = None
     target_type: str = "phone"  # "phone" o "teams"
     display_name: str = "Optinoc VoiceBot"
+    first_message: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_targets(self):
@@ -247,7 +248,8 @@ async def make_outbound_call(request: OutboundCallRequest):
             "openai_ws": None,
             "bot_muted": False,
             "user_speaking": False,
-            "whisper_buffer": b""
+            "whisper_buffer": b"",
+            "first_message": request.first_message
         }
         
         print(f"[CALL] Llamada iniciada: {call_id} -> {targets}")
@@ -545,13 +547,17 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
             
             # Saludo inicial - solo en la primera conexión (no en reconexiones)
             if retry_count == 0:
-                await asyncio.sleep(2.0)  # Esperar 2 segundos antes de saludar
+                first_msg = active_calls[call_id].get("first_message")
+                prompt_text = first_msg if first_msg else "Saluda al usuario brevemente"
+                print(f"[OpenAI] First message: {prompt_text}")
+
+                await asyncio.sleep(2.0)
                 await ws.send(json.dumps({
                     "type": "conversation.item.create",
                     "item": {
                         "type": "message",
                         "role": "user",
-                        "content": [{"type": "input_text", "text": "Saluda al usuario brevemente"}]
+                        "content": [{"type": "input_text", "text": prompt_text}]
                     }
                 }))
                 await ws.send(json.dumps({"type": "response.create"}))
