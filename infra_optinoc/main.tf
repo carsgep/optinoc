@@ -107,55 +107,61 @@ resource "azurerm_network_interface_security_group_association" "nic_sg" {
 }
 
 # ============================================
-# 3. Virtual Machine: VM, Disks
+# 3. Storage: FS, Volumes
 # ============================================
 
-resource "azurerm_linux_virtual_machine" "opti_vm" {
-  name                = "opti-linux-vm"
-  resource_group_name = azurerm_resource_group.rg_name.name
-  location            = azurerm_resource_group.rg_name.location
 
-  # El tamaño más pequeño y barato de Azure (aprox. $4 USD/mes)
-  size                  = "Standard_B2as"
-  admin_username        = "adminopti"
-  network_interface_ids = [azurerm_network_interface.nic_vm.id]
 
-  admin_ssh_key {
-    username   = "adminopti"
-    public_key = file(pathexpand(var.public_key_path))
-  }
+# ============================================
+# 4. Virtual Machine: VM, Disks
+# ============================================
 
-  os_disk {
-    caching = "ReadWrite"
-    # IMPORTANTE: Cambia a Standard_LRS (HDD) para ahorrar más
-    # Premium_LRS es más caro.
-    storage_account_type = "StandardSSD_LRS"
-    disk_size_gb         = 30 # El mínimo para Ubuntu suele ser 30GB
-  }
+# resource "azurerm_linux_virtual_machine" "opti_vm" {
+#   name                = "opti-linux-vm"
+#   resource_group_name = azurerm_resource_group.rg_name.name
+#   location            = azurerm_resource_group.rg_name.location
 
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"
-    sku       = "22_04-lts"
-    version   = "latest"
-  }
-}
+#   # El tamaño más pequeño y barato de Azure (aprox. $4 USD/mes)
+#   size                  = "Standard_B2as"
+#   admin_username        = "adminopti"
+#   network_interface_ids = [azurerm_network_interface.nic_vm.id]
 
-resource "azurerm_managed_disk" "opti_disk" {
-  name                 = "optiDisk"
-  resource_group_name  = azurerm_resource_group.rg_name.name
-  location             = azurerm_resource_group.rg_name.location
-  storage_account_type = "StandardSSD_LRS"
-  create_option        = "Empty"
-  disk_size_gb         = "40"
+#   admin_ssh_key {
+#     username   = "adminopti"
+#     public_key = file(pathexpand(var.public_key_path))
+#   }
 
-  tags = var.tags
-}
+#   os_disk {
+#     caching = "ReadWrite"
+#     # IMPORTANTE: Cambia a Standard_LRS (HDD) para ahorrar más
+#     # Premium_LRS es más caro.
+#     storage_account_type = "StandardSSD_LRS"
+#     disk_size_gb         = 30 # El mínimo para Ubuntu suele ser 30GB
+#   }
 
-resource "azurerm_virtual_machine_data_disk_attachment" "opti_attach_disk" {
-  managed_disk_id    = azurerm_managed_disk.opti_disk.id
-  virtual_machine_id = azurerm_linux_virtual_machine.opti_vm.id
+#   source_image_reference {
+#     publisher = "Canonical"
+#     offer     = "0001-com-ubuntu-server-jammy"
+#     sku       = "22_04-lts"
+#     version   = "latest"
+#   }
+# }
 
-  lun     = 1 # Logical Unit Number. Needs to be unique within the VM
-  caching = "ReadWrite"
-}
+# resource "azurerm_managed_disk" "opti_disk" {
+#   name                 = "optiDisk"
+#   resource_group_name  = azurerm_resource_group.rg_name.name
+#   location             = azurerm_resource_group.rg_name.location
+#   storage_account_type = "StandardSSD_LRS"
+#   create_option        = "Empty"
+#   disk_size_gb         = "40"
+
+#   tags = var.tags
+# }
+
+# resource "azurerm_virtual_machine_data_disk_attachment" "opti_attach_disk" {
+#   managed_disk_id    = azurerm_managed_disk.opti_disk.id
+#   virtual_machine_id = azurerm_linux_virtual_machine.opti_vm.id
+
+#   lun     = 1 # Logical Unit Number. Needs to be unique within the VM
+#   caching = "ReadWrite"
+# }
