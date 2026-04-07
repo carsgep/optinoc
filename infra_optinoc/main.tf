@@ -16,6 +16,7 @@ resource "azurerm_communication_service" "acs" {
   resource_group_name = azurerm_resource_group.rg_name.name
   data_location       = "United States"
 
+
   tags = var.tags
 }
 
