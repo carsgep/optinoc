@@ -1,3 +1,9 @@
+from datetime import datetime
+
+import ibm_db
+from db.db2 import get_db2_connection
+
+
 def get_db2_connection_health():
     """
     Verifica el estado de salud de la conexión DB2
@@ -51,3 +57,6 @@ def get_db2_connection_health():
     finally:
         if conn:
             ibm_db.close(conn)
+
+
+print(get_db2_connection_health())
