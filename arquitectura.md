@@ -39,6 +39,43 @@ Su trabajo es:
 
 FastAPI no es la red telefonica. Es el cerebro de integracion.
 
+### Uso de la API para Teams
+
+Para iniciar llamadas a usuarios de Microsoft Teams se usa el endpoint:
+
+```text
+POST /calls/outbound
+```
+
+Importante:
+
+- `target_type` debe ser `teams`
+- debes enviar el `Object ID` del usuario en Teams, no el correo
+- para un solo usuario usa `target_number`
+- para varios usuarios usa `target_numbers`
+
+### Consulta JSON para un solo usuario de Teams
+
+```json
+{
+  "target_number": "494a9c73-2845-47d7-8a8b-f518095dbb2d",
+  "target_type": "teams"
+}
+```
+
+### Consulta JSON para multiples usuarios de Teams
+
+```json
+{
+  "target_numbers": [
+    "494a9c73-2845-47d7-8a8b-f518095dbb2d",
+    "11111111-2222-3333-4444-555555555555",
+    "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+  ],
+  "target_type": "teams"
+}
+```
+
 ### 2. OpenAI Realtime
 
 Es el motor conversacional de la IA.
