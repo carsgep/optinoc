@@ -483,7 +483,7 @@ def get_db2_connection_health():
         stmt = ibm_db.exec_immediate(conn, sql)
         if stmt:
             result = ibm_db.fetch_assoc(stmt)
-            for key, value in result.items():                 
+            for key, value in result.items():            
                 if isinstance(value, datetime):                     
                     result[key] = value.isoformat()
             return {
