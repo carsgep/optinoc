@@ -369,6 +369,75 @@ Si lo quieres pensar exactamente en el orden en que participan para llamar a un 
 - `Twilio` simula la salida a la PSTN
 - `Cloudflare Tunnel` ayuda a exponer servicios locales
 
+### Limitaciones observadas con FreePBX/Asterisk en este PoC
+
+Aunque `FreePBX/Asterisk` permitio avanzar en la simulacion del SBC, la experiencia documentada en este proyecto muestra problemas importantes que deben quedar claros.
+
+#### 1. No se logro una llamada completamente exitosa con audio bidireccional estable
+
+La documentacion del PoC deja registrado que:
+
+- la senalizacion `ACS -> FreePBX` llego a funcionar
+- el bridge `FreePBX -> Twilio` tambien llego a funcionar
+- la llamada alcanzo a sonar y llegar al telefono real
+- pero el audio bidireccional quedo pendiente
+
+El problema principal identificado fue la negociacion de media con `ACS`, especialmente por manejo de `ICE`, `SRTP` y puertos RTP. En la practica, eso significa que la llamada podia establecerse, pero no se consolidaba una conversacion funcional de extremo a extremo.
+
+#### 2. FreePBX/Asterisk no resulto una base confiable para interoperar con ACS
+
+Segun los hallazgos registrados en el PoC, `FreePBX/Asterisk` no manejo de forma consistente la negociacion requerida por Microsoft `ACS`, especialmente en audio.
+
+En particular se documento que:
+
+- `FreePBX` anunciaba un puerto en el SDP, pero `ACS` enviaba RTP a otro distinto
+- al habilitar `ICE`, la llamada podia colgar inmediatamente
+- al deshabilitar `ICE`, la llamada podia mantenerse pero quedarse sin audio
+- fue necesario introducir `Kamailio` y luego `RTPEngine` como intento de compensacion
+
+Esto sugiere que `FreePBX/Asterisk` funciono solo como aproximacion de laboratorio, pero no como una base suficientemente robusta para este escenario de `Direct Routing` con `ACS`.
+
+#### 3. La instalacion y reconstruccion del entorno fue compleja
+
+Otro problema practico observado es que levantar nuevamente el PoC con `FreePBX/Asterisk` no fue sencillo.
+
+La reconstruccion implico o puede implicar varias piezas adicionales:
+
+- `Docker` y `Docker Compose`
+- configuracion de SIP, TLS y RTP
+- trunks hacia `Twilio`
+- configuracion de `ACS Direct Routing`
+- publicacion del SBC por `Cloudflare Tunnel`
+- en escenarios mas avanzados, tambien `Kamailio` y `RTPEngine`
+
+Eso hace que la solucion tenga una carga operativa alta para algo que en este proyecto solo buscaba simular temporalmente el `Cisco CUBE` del cliente.
+
+#### 4. El uso dentro de Docker agrega friccion con los puertos y la media
+
+Tambien se reportaron dificultades al correr `FreePBX/Asterisk` dentro de `Docker`, especialmente por el manejo de puertos.
+
+Los problemas mas sensibles fueron:
+
+- exposicion correcta de `5060`, `5061` y rangos amplios de RTP como `10000-10100/udp`
+- coordinacion entre puertos publicados por Docker, puertos internos de Asterisk y reglas de firewall/NSG
+- riesgo de que la senalizacion funcione pero el audio no, por desalineacion de RTP
+- mayor dificultad para diagnosticar trafico SIP/RTP cuando hay contenedores, NAT y tuneles de por medio
+
+En este tipo de integracion, donde la media es critica, correr el SBC dentro de contenedores agrego complejidad adicional en vez de simplificar el PoC.
+
+#### 5. Conclusion practica para este proyecto
+
+Dentro de este repositorio, `FreePBX/Asterisk` debe entenderse como una herramienta de experimentacion para simular el SBC del cliente, no como una solucion ya validada para salida a celular con `ACS`.
+
+La experiencia documentada apunta a estas conclusiones:
+
+- sirvio para explorar la arquitectura y validar partes de la senalizacion
+- no permitio cerrar una llamada totalmente funcional con audio estable
+- su despliegue y soporte operativo resultaron complejos
+- su uso en `Docker` agrego dificultad adicional en puertos y media
+
+Por eso, para ambientes reales o siguientes etapas del proyecto, la referencia principal sigue siendo un `SBC` mas apropiado para `Direct Routing`, como el `Cisco CUBE` del cliente o un SBC certificado para Microsoft.
+
 ### En produccion
 
 - `Cisco CUBE` reemplaza a `FreePBX/Asterisk`
