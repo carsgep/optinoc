@@ -16,6 +16,9 @@ import numpy as np
 from scipy import signal
 import wave
 
+
+
+
 # Azure Communication Services
 from azure.communication.callautomation import (
     CallAutomationClient,
@@ -99,6 +102,46 @@ app = FastAPI(
 
 # Almacen de llamadas activas
 active_calls: dict = {}
+
+
+# ============================================================================
+# DRACHTIO / 3CX INTEGRATION
+# ============================================================================
+
+class DrachtioIncomingCall(BaseModel):
+    call_id: str
+    from_number: Optional[str] = None
+    to_number: Optional[str] = None
+
+
+@app.post("/calls/drachtio/incoming")
+async def drachtio_incoming_call(event: DrachtioIncomingCall):
+    active_calls[event.call_id] = {
+        "call_id": event.call_id,
+        "status": "connected",
+        "provider": "drachtio",
+        "targets": [event.to_number] if event.to_number else [],
+        "from_number": event.from_number,
+        "to_number": event.to_number,
+        "started_at": datetime.now().isoformat(),
+        "openai_ws": None,
+        "media_ws": None,
+        "bot_muted": False,
+        "user_speaking": False,
+        "whisper_buffer": b"",
+        "first_message": "Saluda al usuario brevemente",
+        "join_url": None
+    }
+
+    print(f"[DRACHTIO] Llamada registrada: {event.call_id}")
+    print(f"[DRACHTIO] From: {event.from_number}")
+    print(f"[DRACHTIO] To: {event.to_number}")
+
+    return {
+        "status": "ok",
+        "call_id": event.call_id,
+        "message": "Llamada registrada en FastAPI"
+    }
 
 
 # ============================================================================
@@ -373,9 +416,12 @@ async def list_calls():
         "calls": [
             {
                 "call_id": call_id,
-                "status": info["status"],
-                "targets": info["targets"],
-                "started_at": info["started_at"],
+                "status": info.get("status"),
+                "provider": info.get("provider", "acs"),
+                "targets": info.get("targets", []),
+                "from_number": info.get("from_number"),
+                "to_number": info.get("to_number"),
+                "started_at": info.get("started_at"),
                 "join_url": info.get("join_url")
             }
             for call_id, info in active_calls.items()
