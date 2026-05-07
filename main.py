@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, WebSocket, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
 import json
@@ -15,6 +16,8 @@ from pydantic import BaseModel, model_validator
 import numpy as np
 from scipy import signal
 import wave
+
+
 
 
 
@@ -103,6 +106,14 @@ app = FastAPI(
 # Almacen de llamadas activas
 active_calls: dict = {}
 
+# ============================================================================
+# AUDIO FILES PARA DRACHTIO / FREESWITCH
+# ============================================================================
+
+AUDIO_DIR = "/tmp/opti-audio"
+os.makedirs(AUDIO_DIR, exist_ok=True)
+
+app.mount("/audio", StaticFiles(directory=AUDIO_DIR), name="audio")
 
 # ============================================================================
 # DRACHTIO / 3CX INTEGRATION
@@ -143,6 +154,154 @@ async def drachtio_incoming_call(event: DrachtioIncomingCall):
         "message": "Llamada registrada en FastAPI"
     }
 
+class DrachtioGreetingRequest(BaseModel):
+    call_id: str
+    from_number: Optional[str] = None
+    to_number: Optional[str] = None
+
+
+def pcm_bytes_to_wav_bytes(pcm_data: bytes, sample_rate: int = 16000) -> bytes:
+    """
+    Convierte PCM 16-bit mono a WAV.
+    FreeSWITCH reproduce mejor un WAV con header correcto.
+    """
+    wav_buffer = io.BytesIO()
+    with wave.open(wav_buffer, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(pcm_data)
+
+    wav_buffer.seek(0)
+    return wav_buffer.read()
+
+
+async def generate_realtime_audio_wav(prompt_text: str, output_path: str) -> str:
+    """
+    Usa la misma lógica de OpenAI Realtime del bot para generar audio.
+    Genera un WAV local que luego FreeSWITCH puede reproducir.
+    """
+    url = "wss://api.openai.com/v1/realtime?model=gpt-realtime-mini-2025-12-15"
+
+    audio_chunks_24khz: list[bytes] = []
+    final_transcript = ""
+
+    async with websockets.connect(
+        url,
+        additional_headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "OpenAI-Beta": "realtime=v1"
+        },
+        ping_interval=20,
+        ping_timeout=10,
+        close_timeout=10
+    ) as ws:
+        await ws.send(json.dumps({
+            "type": "session.update",
+            "session": {
+                "modalities": ["text", "audio"],
+                "instructions": SYSTEM_PROMPT,
+                "voice": "alloy",
+                "input_audio_format": "pcm16",
+                "output_audio_format": "pcm16",
+                "tools": tools,
+                "temperature": 0.8
+            }
+        }))
+
+        await ws.send(json.dumps({
+            "type": "conversation.item.create",
+            "item": {
+                "type": "message",
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": prompt_text
+                    }
+                ]
+            }
+        }))
+
+        await ws.send(json.dumps({"type": "response.create"}))
+
+        async for message in ws:
+            event = json.loads(message)
+            event_type = event.get("type")
+
+            if event_type == "response.audio.delta":
+                audio_b64 = event.get("delta", "")
+                if audio_b64:
+                    audio_chunks_24khz.append(base64.b64decode(audio_b64))
+
+            elif event_type == "response.audio_transcript.done":
+                final_transcript = event.get("transcript", "")
+
+            elif event_type == "response.done":
+                break
+
+            elif event_type == "error":
+                print(f"[Realtime Greeting] Error: {event.get('error')}")
+                break
+
+    raw_audio_24khz = b"".join(audio_chunks_24khz)
+
+    if not raw_audio_24khz:
+        raise RuntimeError("OpenAI Realtime no generó audio")
+
+    # Reusar tu función existente para pasar de 24kHz a 16kHz
+    raw_b64_24khz = base64.b64encode(raw_audio_24khz).decode("utf-8")
+    raw_b64_16khz = resample_audio(raw_b64_24khz, input_rate=24000, output_rate=16000)
+    raw_audio_16khz = base64.b64decode(raw_b64_16khz)
+
+    wav_data = pcm_bytes_to_wav_bytes(raw_audio_16khz, sample_rate=16000)
+
+    with open(output_path, "wb") as f:
+        f.write(wav_data)
+
+    return final_transcript
+
+
+@app.post("/bot/drachtio/realtime-greeting")
+async def drachtio_realtime_greeting(request: DrachtioGreetingRequest):
+    """
+    Genera un saludo usando la misma IA Realtime del bot.
+    Devuelve una URL WAV para que FreeSWITCH la reproduzca.
+    """
+    safe_call_id = "".join(
+        c if c.isalnum() or c in ("-", "_") else "_"
+        for c in request.call_id
+    )
+
+    audio_filename = f"greeting_{safe_call_id}.wav"
+    audio_path = os.path.join(AUDIO_DIR, audio_filename)
+
+    prompt_text = (
+        "Genera un saludo breve de voz para una llamada telefónica. "
+        "Preséntate como OPTI, asistente virtual de Optimize IT, "
+        "di que ya estás conectado por 3CX y pregunta en qué puedes ayudar. "
+        "No menciones detalles técnicos."
+    )
+
+    try:
+        transcript = await generate_realtime_audio_wav(prompt_text, audio_path)
+
+        audio_url = f"http://10.240.64.27:8000/audio/{audio_filename}"
+
+        print(f"[DRACHTIO][AI] Saludo generado para {request.call_id}")
+        print(f"[DRACHTIO][AI] Texto: {transcript}")
+        print(f"[DRACHTIO][AI] Audio: {audio_url}")
+
+        return {
+            "status": "ok",
+            "call_id": request.call_id,
+            "text": transcript,
+            "audio_url": audio_url
+        }
+
+    except Exception as e:
+        print(f"[DRACHTIO][AI] Error generando saludo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
 # MICROSOFT GRAPH API (Reuniones de Teams)
