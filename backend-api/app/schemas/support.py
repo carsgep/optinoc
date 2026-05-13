@@ -108,3 +108,93 @@ class OnCallScheduleRead(OnCallScheduleBase):
     support_group: Optional[SupportGroupRead] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+class AlertTypeBase(BaseModel):
+    code: str = Field(..., min_length=2, max_length=100)
+    name: str = Field(..., min_length=2, max_length=150)
+    description: Optional[str] = None
+    severity: Optional[str] = None
+    active: bool = True
+
+
+class AlertTypeCreate(AlertTypeBase):
+    pass
+
+
+class AlertTypeUpdate(BaseModel):
+    code: Optional[str] = Field(default=None, min_length=2, max_length=100)
+    name: Optional[str] = Field(default=None, min_length=2, max_length=150)
+    description: Optional[str] = None
+    severity: Optional[str] = None
+    active: Optional[bool] = None
+
+
+class AlertTypeRead(AlertTypeBase):
+    id: int
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EscalationLevelBase(BaseModel):
+    level_order: int = Field(..., ge=1)
+    support_group_id: int
+    selected_engineer_id: Optional[int] = None
+    use_on_call_schedule: bool = True
+    on_call_priority_order: Optional[int] = Field(default=None, ge=1)
+    call_extension: bool = True
+    call_mobile: bool = False
+    active: bool = True
+
+
+class EscalationLevelCreate(EscalationLevelBase):
+    pass
+
+
+class EscalationLevelUpdate(BaseModel):
+    level_order: Optional[int] = Field(default=None, ge=1)
+    support_group_id: Optional[int] = None
+    selected_engineer_id: Optional[int] = None
+    use_on_call_schedule: Optional[bool] = None
+    on_call_priority_order: Optional[int] = Field(default=None, ge=1)
+    call_extension: Optional[bool] = None
+    call_mobile: Optional[bool] = None
+    active: Optional[bool] = None
+
+
+class EscalationLevelRead(EscalationLevelBase):
+    id: int
+    escalation_policy_id: int
+    support_group: Optional[SupportGroupRead] = None
+    selected_engineer: Optional[EngineerRead] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EscalationPolicyBase(BaseModel):
+    alert_type_id: int
+    name: str = Field(..., min_length=2, max_length=150)
+    retry_attempts: int = Field(default=3, ge=1)
+    retry_interval_seconds: int = Field(default=120, ge=1)
+    active: bool = True
+
+
+class EscalationPolicyCreate(EscalationPolicyBase):
+    pass
+
+
+class EscalationPolicyUpdate(BaseModel):
+    alert_type_id: Optional[int] = None
+    name: Optional[str] = Field(default=None, min_length=2, max_length=150)
+    retry_attempts: Optional[int] = Field(default=None, ge=1)
+    retry_interval_seconds: Optional[int] = Field(default=None, ge=1)
+    active: Optional[bool] = None
+
+
+class EscalationPolicyRead(EscalationPolicyBase):
+    id: int
+    created_at: Optional[datetime] = None
+    alert_type: Optional[AlertTypeRead] = None
+    levels: list[EscalationLevelRead] = []
+
+    model_config = ConfigDict(from_attributes=True)

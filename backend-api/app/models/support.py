@@ -58,7 +58,6 @@ class SupportGroupMember(Base):
         UniqueConstraint("support_group_id", "engineer_id", name="uq_group_engineer"),
     )
 
-
 class AlertType(Base):
     __tablename__ = "alert_types"
 
@@ -70,6 +69,7 @@ class AlertType(Base):
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
 
+    policies = relationship("EscalationPolicy", back_populates="alert_type")
 
 class EscalationPolicy(Base):
     __tablename__ = "escalation_policies"
@@ -81,6 +81,9 @@ class EscalationPolicy(Base):
     retry_interval_seconds = Column(Integer, default=120)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
+
+    alert_type = relationship("AlertType", back_populates="policies")
+    levels = relationship("EscalationLevel", back_populates="policy")
 
 
 class EscalationLevel(Base):
@@ -97,10 +100,13 @@ class EscalationLevel(Base):
     call_mobile = Column(Boolean, default=False)
     active = Column(Boolean, default=True)
 
+    policy = relationship("EscalationPolicy", back_populates="levels")
+    support_group = relationship("SupportGroup")
+    selected_engineer = relationship("Engineer")
+
     __table_args__ = (
         UniqueConstraint("escalation_policy_id", "level_order", name="uq_policy_level"),
     )
-
 
 class OnCallSchedule(Base):
     __tablename__ = "on_call_schedules"
