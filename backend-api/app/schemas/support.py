@@ -198,3 +198,28 @@ class EscalationPolicyRead(EscalationPolicyBase):
     levels: list[EscalationLevelRead] = []
 
     model_config = ConfigDict(from_attributes=True)
+class CallPlanGenerateRequest(BaseModel):
+    alert_type_code: str = Field(..., min_length=2, max_length=100)
+    reference_date: Optional[date] = None
+
+
+class CallPlanStep(BaseModel):
+    level: int
+    support_group_id: int
+    support_group_name: str
+    engineer_id: int
+    engineer_name: str
+    destination_type: str
+    destination_value: str
+    retry_attempts: int
+    retry_interval_seconds: int
+    call_extension: bool
+    call_mobile: bool
+
+
+class CallPlanGenerateResponse(BaseModel):
+    alert_type_code: str
+    policy_id: int
+    policy_name: str
+    reference_date: date
+    steps: list[CallPlanStep]
