@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.config import settings
 from app.database import Base, engine
 from app.routers import (
+    alert_events,
     alert_types,
     call_plans,
     engineers,
@@ -34,3 +35,4 @@ app.include_router(on_call_schedules.router)
 app.include_router(alert_types.router)
 app.include_router(escalation_policies.router)
 app.include_router(call_plans.router)
+app.include_router(alert_events.router)

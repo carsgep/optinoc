@@ -223,3 +223,49 @@ class CallPlanGenerateResponse(BaseModel):
     policy_name: str
     reference_date: date
     steps: list[CallPlanStep]
+
+class SimulatedCallOutcome(BaseModel):
+    level: int = Field(..., ge=1)
+    attempt_number: int = Field(..., ge=1)
+    status: str = Field(
+        ...,
+        description="Valores permitidos: ANSWERED_HUMAN, VOICEMAIL, NO_ANSWER, BUSY, FAILED",
+    )
+
+
+class AlertSimulationRequest(BaseModel):
+    alert_type_code: str = Field(..., min_length=2, max_length=100)
+    title: Optional[str] = None
+    message: str = Field(..., min_length=2)
+    reference_date: Optional[date] = None
+
+    # Si se envía, sobrescribe el intervalo de la política.
+    retry_interval_minutes: Optional[int] = Field(default=None, ge=1)
+
+    # Permite simular resultados por nivel/intento.
+    # Si no se envía un resultado para un intento, por defecto será NO_ANSWER.
+    simulated_outcomes: list[SimulatedCallOutcome] = []
+
+
+class AlertSimulationAttempt(BaseModel):
+    level: int
+    engineer_id: int
+    engineer_name: str
+    destination_type: str
+    destination_value: str
+    attempt_number: int
+    scheduled_at: datetime
+    simulated_status: str
+    counts_as_answer: bool
+
+
+class AlertSimulationResponse(BaseModel):
+    alert_event_id: int
+    alert_type_code: str
+    title: Optional[str] = None
+    message: str
+    final_status: str
+    answered_by: Optional[str] = None
+    answered_level: Optional[int] = None
+    retry_interval_minutes_used: int
+    attempts: list[AlertSimulationAttempt]

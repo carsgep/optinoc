@@ -1,4 +1,5 @@
 from app.routers import (
+    alert_events,
     alert_types,
     call_plans,
     engineers,
@@ -8,6 +9,7 @@ from app.routers import (
 )
 
 __all__ = [
+    "alert_events",
     "alert_types",
     "call_plans",
     "engineers",
