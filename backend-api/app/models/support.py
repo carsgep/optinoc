@@ -114,6 +114,8 @@ class OnCallSchedule(Base):
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
 
+    support_group = relationship("SupportGroup")
+    engineer = relationship("Engineer")
 
 class AlertEvent(Base):
     __tablename__ = "alert_events"

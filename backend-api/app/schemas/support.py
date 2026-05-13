@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -77,3 +78,33 @@ class GroupMemberRead(BaseModel):
 class GroupMemberUpdate(BaseModel):
     role: Optional[str] = None
     active: Optional[bool] = None
+
+class OnCallScheduleBase(BaseModel):
+    support_group_id: int
+    engineer_id: int
+    week_start_date: date
+    week_end_date: date
+    priority_order: int = Field(default=1, ge=1)
+    active: bool = True
+
+
+class OnCallScheduleCreate(OnCallScheduleBase):
+    pass
+
+
+class OnCallScheduleUpdate(BaseModel):
+    support_group_id: Optional[int] = None
+    engineer_id: Optional[int] = None
+    week_start_date: Optional[date] = None
+    week_end_date: Optional[date] = None
+    priority_order: Optional[int] = Field(default=None, ge=1)
+    active: Optional[bool] = None
+
+
+class OnCallScheduleRead(OnCallScheduleBase):
+    id: int
+    created_at: Optional[datetime] = None
+    engineer: Optional[EngineerRead] = None
+    support_group: Optional[SupportGroupRead] = None
+
+    model_config = ConfigDict(from_attributes=True)
