@@ -61,3 +61,19 @@ class GroupMemberCreate(BaseModel):
     engineer_id: int
     role: Optional[str] = None
     active: bool = True
+
+
+class GroupMemberRead(BaseModel):
+    id: int
+    support_group_id: int
+    engineer_id: int
+    role: Optional[str] = None
+    active: bool = True
+    engineer: EngineerRead
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GroupMemberUpdate(BaseModel):
+    role: Optional[str] = None
+    active: Optional[bool] = None
