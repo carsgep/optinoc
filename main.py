@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, WebSocket, HTTPException
+from fastapi import FastAPI, Request, WebSocket, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
@@ -16,10 +16,6 @@ from pydantic import BaseModel, model_validator
 import numpy as np
 from scipy import signal
 import wave
-
-
-
-
 
 
 # Azure Communication Services
@@ -40,6 +36,8 @@ load_dotenv()
 
 # Configuracion
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+PUBLIC_AUDIO_BASE_URL = os.getenv("PUBLIC_AUDIO_BASE_URL", "http://10.240.64.27:8000")
+
 ACS_CONNECTION_STRING = os.getenv("ACS_CONNECTION_STRING")
 CALLBACK_URI = os.getenv("CALLBACK_URI")  # URL publica - usar ngrok para desarrollo
 TENANT_ID = os.getenv("TENANT_ID")  # Microsoft 365 Tenant ID para llamadas a Teams
@@ -49,6 +47,7 @@ GRAPH_CLIENT_ID = os.getenv("GRAPH_CLIENT_ID")
 GRAPH_CLIENT_SECRET = os.getenv("GRAPH_CLIENT_SECRET")
 MEETING_ORGANIZER_ID = os.getenv("MEETING_ORGANIZER_ID")  # Object ID del usuario organizador
 
+
 # Cargar prompt
 def load_prompt():
     try:
@@ -57,26 +56,28 @@ def load_prompt():
     except FileNotFoundError:
         return "Eres un asistente de voz amigable que habla espanol."
 
+
 SYSTEM_PROMPT = load_prompt()
 
 # Cliente de ACS (se inicializa si hay connection string)
 acs_client: Optional[CallAutomationClient] = None
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Inicializar recursos al arrancar"""
     global acs_client
-    
-    print("\n" + "="*50)
+
+    print("\n" + "=" * 50)
     print("CONFIGURACION")
-    print("="*50)
-    
+    print("=" * 50)
+
     if ACS_CONNECTION_STRING:
         acs_client = CallAutomationClient.from_connection_string(ACS_CONNECTION_STRING)
         print("[OK] ACS Client inicializado")
     else:
         print("[!!] ACS_CONNECTION_STRING no configurado")
-    
+
     if CALLBACK_URI:
         print(f"[OK] Callback URI: {CALLBACK_URI}")
     else:
@@ -85,17 +86,24 @@ async def lifespan(app: FastAPI):
         print("     1. Instala ngrok: https://ngrok.com/download")
         print("     2. Ejecuta: ngrok http 8000")
         print("     3. Copia la URL https y ponla en .env como CALLBACK_URI")
-    
+
     if graph_configured():
         print(f"[OK] Graph API configurado (organizer: {MEETING_ORGANIZER_ID})")
     else:
         print("[!!] Graph API no configurado (generate_meeting_link no disponible)")
         print("     Necesitas: GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, MEETING_ORGANIZER_ID")
-    
-    print("="*50 + "\n")
-    
+
+    if OPENAI_API_KEY:
+        print("[OK] OPENAI_API_KEY configurada")
+    else:
+        print("[!!] OPENAI_API_KEY no configurada")
+
+    print(f"[OK] PUBLIC_AUDIO_BASE_URL: {PUBLIC_AUDIO_BASE_URL}")
+    print("=" * 50 + "\n")
+
     yield
     print("Cerrando aplicacion...")
+
 
 app = FastAPI(
     title="Optinoc BOCC Realtime",
@@ -115,6 +123,7 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 
 app.mount("/audio", StaticFiles(directory=AUDIO_DIR), name="audio")
 
+
 # ============================================================================
 # DRACHTIO / 3CX INTEGRATION
 # ============================================================================
@@ -131,6 +140,8 @@ async def drachtio_incoming_call(event: DrachtioIncomingCall):
         "call_id": event.call_id,
         "status": "connected",
         "provider": "drachtio",
+        "channel": "3cx_extension",
+        "response_channel": "3cx_extension",
         "targets": [event.to_number] if event.to_number else [],
         "from_number": event.from_number,
         "to_number": event.to_number,
@@ -154,10 +165,18 @@ async def drachtio_incoming_call(event: DrachtioIncomingCall):
         "message": "Llamada registrada en FastAPI"
     }
 
+
 class DrachtioGreetingRequest(BaseModel):
     call_id: str
     from_number: Optional[str] = None
     to_number: Optional[str] = None
+
+
+def safe_filename(value: str) -> str:
+    return "".join(
+        c if c.isalnum() or c in ("-", "_") else "_"
+        for c in value
+    )
 
 
 def pcm_bytes_to_wav_bytes(pcm_data: bytes, sample_rate: int = 16000) -> bytes:
@@ -181,6 +200,9 @@ async def generate_realtime_audio_wav(prompt_text: str, output_path: str) -> str
     Usa la misma lógica de OpenAI Realtime del bot para generar audio.
     Genera un WAV local que luego FreeSWITCH puede reproducir.
     """
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY no está configurada")
+
     url = "wss://api.openai.com/v1/realtime?model=gpt-realtime-mini-2025-12-15"
 
     audio_chunks_24khz: list[bytes] = []
@@ -249,7 +271,6 @@ async def generate_realtime_audio_wav(prompt_text: str, output_path: str) -> str
     if not raw_audio_24khz:
         raise RuntimeError("OpenAI Realtime no generó audio")
 
-    # Reusar tu función existente para pasar de 24kHz a 16kHz
     raw_b64_24khz = base64.b64encode(raw_audio_24khz).decode("utf-8")
     raw_b64_16khz = resample_audio(raw_b64_24khz, input_rate=24000, output_rate=16000)
     raw_audio_16khz = base64.b64decode(raw_b64_16khz)
@@ -268,10 +289,7 @@ async def drachtio_realtime_greeting(request: DrachtioGreetingRequest):
     Genera un saludo usando la misma IA Realtime del bot.
     Devuelve una URL WAV para que FreeSWITCH la reproduzca.
     """
-    safe_call_id = "".join(
-        c if c.isalnum() or c in ("-", "_") else "_"
-        for c in request.call_id
-    )
+    safe_call_id = safe_filename(request.call_id)
 
     audio_filename = f"greeting_{safe_call_id}.wav"
     audio_path = os.path.join(AUDIO_DIR, audio_filename)
@@ -286,7 +304,7 @@ async def drachtio_realtime_greeting(request: DrachtioGreetingRequest):
     try:
         transcript = await generate_realtime_audio_wav(prompt_text, audio_path)
 
-        audio_url = f"http://10.240.64.27:8000/audio/{audio_filename}"
+        audio_url = f"{PUBLIC_AUDIO_BASE_URL}/audio/{audio_filename}"
 
         print(f"[DRACHTIO][AI] Saludo generado para {request.call_id}")
         print(f"[DRACHTIO][AI] Texto: {transcript}")
@@ -302,6 +320,398 @@ async def drachtio_realtime_greeting(request: DrachtioGreetingRequest):
     except Exception as e:
         print(f"[DRACHTIO][AI] Error generando saludo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def transcribe_uploaded_audio_with_whisper(audio_bytes: bytes, filename: str = "audio.wav") -> str:
+    """
+    Transcribe un archivo de audio recibido desde FreeSWITCH.
+    A diferencia de transcribe_with_whisper(), aquí el audio ya viene como WAV/archivo.
+    """
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY no está configurada")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.openai.com/v1/audio/transcriptions",
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}"
+                },
+                files={
+                    "file": (filename or "audio.wav", audio_bytes, "audio/wav")
+                },
+                data={
+                    "model": "whisper-1",
+                    "language": "es"
+                },
+                timeout=30.0
+            )
+
+        if response.status_code != 200:
+            print(f"[DRACHTIO][Whisper] Error API: {response.status_code} - {response.text}")
+            raise RuntimeError(response.text)
+
+        result = response.json()
+        transcript = result.get("text", "").strip()
+
+        print(f"[DRACHTIO][Whisper] Transcripción: {transcript}")
+        return transcript
+
+    except Exception as e:
+        print(f"[DRACHTIO][Whisper] Error transcribiendo audio: {e}")
+        raise
+
+
+async def generate_drachtio_turn_audio_wav(
+    call_id: str,
+    user_text: str,
+    output_path: str,
+    from_number: Optional[str] = None,
+    to_number: Optional[str] = None
+) -> str:
+    """
+    Genera una respuesta hablada para 3CX usando OpenAI Realtime + tools DB2.
+    Si el modelo solicita una función, se ejecuta execute_function() y se continúa la respuesta.
+    """
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY no está configurada")
+
+    url = "wss://api.openai.com/v1/realtime?model=gpt-realtime-mini-2025-12-15"
+
+    audio_chunks_24khz: list[bytes] = []
+    final_transcript = ""
+
+    channel_instruction = (
+        "Contexto de canal: esta conversación viene desde una extensión telefónica 3CX "
+        "a través de Drachtio y FreeSWITCH. "
+        "Responde SIEMPRE para ser escuchado por voz en la misma llamada. "
+        "No digas que enviarás la respuesta por Teams, correo, chat ni otro canal. "
+        "Sé claro, breve y natural. Si consultas DB2 o herramientas, resume el resultado para voz."
+    )
+
+    user_prompt = (
+        f"{channel_instruction}\n\n"
+        f"Call ID: {call_id}\n"
+        f"From: {from_number or ''}\n"
+        f"To: {to_number or ''}\n\n"
+        f"Pregunta del usuario transcrita desde la llamada 3CX:\n{user_text}"
+    )
+
+    pending_function_response = False
+
+    async with websockets.connect(
+        url,
+        additional_headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "OpenAI-Beta": "realtime=v1"
+        },
+        ping_interval=20,
+        ping_timeout=10,
+        close_timeout=10
+    ) as ws:
+        await ws.send(json.dumps({
+            "type": "session.update",
+            "session": {
+                "modalities": ["text", "audio"],
+                "instructions": SYSTEM_PROMPT + "\n\n" + channel_instruction,
+                "voice": "alloy",
+                "input_audio_format": "pcm16",
+                "output_audio_format": "pcm16",
+                "tools": tools,
+                "temperature": 0.7
+            }
+        }))
+
+        await ws.send(json.dumps({
+            "type": "conversation.item.create",
+            "item": {
+                "type": "message",
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": user_prompt
+                    }
+                ]
+            }
+        }))
+
+        await ws.send(json.dumps({"type": "response.create"}))
+
+        async for message in ws:
+            event = json.loads(message)
+            event_type = event.get("type")
+
+            if event_type == "response.audio.delta":
+                audio_b64 = event.get("delta", "")
+                if audio_b64:
+                    audio_chunks_24khz.append(base64.b64decode(audio_b64))
+
+            elif event_type == "response.audio_transcript.done":
+                transcript = event.get("transcript", "").strip()
+                if transcript:
+                    final_transcript = transcript
+                    print(f"[DRACHTIO][AI] Respuesta texto: {final_transcript}")
+
+            elif event_type == "response.output_item.added":
+                item = event.get("item", {})
+                if item.get("type") == "function_call":
+                    print(f"[DRACHTIO][AI] Function call agregado: {item.get('name')}")
+
+            elif event_type == "response.function_call_arguments.done":
+                function_name = event.get("name")
+                function_args_str = event.get("arguments", "{}")
+                function_call_id = event.get("call_id")
+
+                print(f"[DRACHTIO][AI] Function call: {function_name}")
+                print(f"[DRACHTIO][AI] Arguments: {function_args_str}")
+
+                try:
+                    function_args = json.loads(function_args_str) if function_args_str else {}
+
+                    if function_name == "set_bot_muted":
+                        muted = function_args.get("muted", False)
+                        if call_id in active_calls:
+                            active_calls[call_id]["bot_muted"] = muted
+
+                        function_result = json.dumps({
+                            "success": True,
+                            "muted": muted,
+                            "message": "Estado de silencio actualizado para esta llamada 3CX."
+                        })
+                    else:
+                        function_result = execute_function(function_name, function_args)
+
+                    print(f"[DRACHTIO][AI] Resultado función: {str(function_result)[:300]}...")
+
+                    await ws.send(json.dumps({
+                        "type": "conversation.item.create",
+                        "item": {
+                            "type": "function_call_output",
+                            "call_id": function_call_id,
+                            "output": function_result
+                        }
+                    }))
+
+                    pending_function_response = True
+                    await ws.send(json.dumps({"type": "response.create"}))
+
+                except Exception as e:
+                    print(f"[DRACHTIO][AI] Error ejecutando función: {e}")
+
+                    await ws.send(json.dumps({
+                        "type": "conversation.item.create",
+                        "item": {
+                            "type": "function_call_output",
+                            "call_id": function_call_id,
+                            "output": json.dumps({"error": str(e)})
+                        }
+                    }))
+
+                    pending_function_response = True
+                    await ws.send(json.dumps({"type": "response.create"}))
+
+            elif event_type == "response.done":
+                if pending_function_response:
+                    pending_function_response = False
+                    continue
+                break
+
+            elif event_type == "error":
+                print(f"[DRACHTIO][AI] Error event: {event.get('error')}")
+                break
+
+    raw_audio_24khz = b"".join(audio_chunks_24khz)
+
+    if not raw_audio_24khz:
+        raise RuntimeError("OpenAI Realtime no generó audio de respuesta")
+
+    raw_b64_24khz = base64.b64encode(raw_audio_24khz).decode("utf-8")
+    raw_b64_16khz = resample_audio(raw_b64_24khz, input_rate=24000, output_rate=16000)
+    raw_audio_16khz = base64.b64decode(raw_b64_16khz)
+
+    wav_data = pcm_bytes_to_wav_bytes(raw_audio_16khz, sample_rate=16000)
+
+    with open(output_path, "wb") as f:
+        f.write(wav_data)
+
+    return final_transcript
+
+
+@app.post("/bot/drachtio/audio-turn")
+async def drachtio_audio_turn(
+    call_id: str = Form(...),
+    from_number: Optional[str] = Form(None),
+    to_number: Optional[str] = Form(None),
+    audio: UploadFile = File(...)
+):
+    """
+    Recibe una grabación WAV desde FreeSWITCH/Node, transcribe la pregunta,
+    consulta la IA con herramientas DB2 y devuelve un WAV para reproducir por 3CX.
+    """
+    if call_id not in active_calls:
+        active_calls[call_id] = {
+            "call_id": call_id,
+            "status": "connected",
+            "provider": "drachtio",
+            "channel": "3cx_extension",
+            "response_channel": "3cx_extension",
+            "targets": [to_number] if to_number else [],
+            "from_number": from_number,
+            "to_number": to_number,
+            "started_at": datetime.now().isoformat(),
+            "openai_ws": None,
+            "media_ws": None,
+            "bot_muted": False,
+            "user_speaking": False,
+            "whisper_buffer": b"",
+            "first_message": None,
+            "join_url": None
+        }
+    else:
+        active_calls[call_id]["provider"] = "drachtio"
+        active_calls[call_id]["channel"] = "3cx_extension"
+        active_calls[call_id]["response_channel"] = "3cx_extension"
+        active_calls[call_id]["from_number"] = from_number
+        active_calls[call_id]["to_number"] = to_number
+
+    audio_bytes = await audio.read()
+
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Audio vacío")
+
+    try:
+        user_text = await transcribe_uploaded_audio_with_whisper(
+            audio_bytes=audio_bytes,
+            filename=audio.filename or "turn.wav"
+        )
+
+        if not user_text:
+            return {
+                "status": "no_speech",
+                "call_id": call_id,
+                "transcript": "",
+                "response_text": "",
+                "audio_url": None,
+                "message": "No se detectó voz en la grabación"
+            }
+
+        safe_call_id = safe_filename(call_id)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+
+        audio_filename = f"response_{safe_call_id}_{timestamp}.wav"
+        audio_path = os.path.join(AUDIO_DIR, audio_filename)
+
+        response_text = await generate_drachtio_turn_audio_wav(
+            call_id=call_id,
+            user_text=user_text,
+            output_path=audio_path,
+            from_number=from_number,
+            to_number=to_number
+        )
+
+        audio_url = f"{PUBLIC_AUDIO_BASE_URL}/audio/{audio_filename}"
+
+        active_calls[call_id]["last_user_text"] = user_text
+        active_calls[call_id]["last_response_text"] = response_text
+        active_calls[call_id]["last_response_audio_url"] = audio_url
+        active_calls[call_id]["updated_at"] = datetime.now().isoformat()
+
+        print(f"[DRACHTIO][TURN] Call: {call_id}")
+        print(f"[DRACHTIO][TURN] Usuario: {user_text}")
+        print(f"[DRACHTIO][TURN] Respuesta: {response_text}")
+        print(f"[DRACHTIO][TURN] Audio: {audio_url}")
+
+        return {
+            "status": "ok",
+            "call_id": call_id,
+            "provider": "drachtio",
+            "channel": "3cx_extension",
+            "response_channel": "3cx_extension",
+            "transcript": user_text,
+            "response_text": response_text,
+            "audio_url": audio_url
+        }
+
+    except Exception as e:
+        print(f"[DRACHTIO][TURN] Error procesando turno: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ============================================================================
+# TOOLS EXECUTION API PARA NODE REALTIME BRIDGE
+# ============================================================================
+
+class ToolExecuteRequest(BaseModel):
+    function_name: str
+    function_args: Optional[dict] = None
+    call_id: Optional[str] = None
+    channel: Optional[str] = None
+
+
+@app.get("/bot/tools")
+async def list_bot_tools():
+    """
+    Lista las herramientas disponibles para OpenAI Realtime.
+    Node realtime-bridge.js usa este endpoint para configurar la sesión con tools.
+    """
+    return {
+        "status": "ok",
+        "tools": tools,
+        "available_functions": list(available_functions.keys())
+    }
+
+
+@app.post("/bot/tools/execute")
+async def execute_bot_tool(request: ToolExecuteRequest):
+    """
+    Ejecuta una función del bot, por ejemplo consultas DB2.
+    Este endpoint lo usa realtime-bridge.js cuando OpenAI Realtime solicita function_call.
+    """
+    try:
+        print("[TOOLS] Function call desde realtime bridge")
+        print(f"[TOOLS] call_id: {request.call_id}")
+        print(f"[TOOLS] channel: {request.channel}")
+        print(f"[TOOLS] function_name: {request.function_name}")
+        print(f"[TOOLS] function_args: {request.function_args}")
+
+        if request.function_name == "set_bot_muted":
+            muted = False
+            if request.function_args:
+                muted = bool(request.function_args.get("muted", False))
+
+            if request.call_id and request.call_id in active_calls:
+                active_calls[request.call_id]["bot_muted"] = muted
+
+            result = json.dumps({
+                "success": True,
+                "muted": muted,
+                "message": "Estado de silencio actualizado para esta llamada 3CX."
+            }, ensure_ascii=False)
+
+        else:
+            result = execute_function(
+                request.function_name,
+                request.function_args or {}
+            )
+
+        print(f"[TOOLS] Resultado: {str(result)[:500]}...")
+
+        return {
+            "status": "ok",
+            "function_name": request.function_name,
+            "result": result
+        }
+
+    except Exception as e:
+        print(f"[TOOLS] Error ejecutando herramienta: {e}")
+        return {
+            "status": "error",
+            "function_name": request.function_name,
+            "error": str(e)
+        }
+
 
 # ============================================================================
 # MICROSOFT GRAPH API (Reuniones de Teams)
@@ -380,7 +790,7 @@ async def create_teams_meeting(subject: str = "OPTI - Llamada NOC") -> dict:
 
 class OutboundCallRequest(BaseModel):
     """Solicitud para hacer una llamada saliente.
-    
+
     Acepta un solo destino (target_number) o múltiples (target_numbers) para llamadas grupales.
     """
     target_number: Optional[str] = None
@@ -452,29 +862,28 @@ async def test_websocket():
 async def make_outbound_call(request: OutboundCallRequest):
     """
     Inicia una llamada saliente a uno o varios destinos.
-    
+
     - Un destino:   {"target_number": "GUID-object-id", "target_type": "teams"}
     - Varios (grupal): {"target_numbers": ["GUID-1", "GUID-2"], "target_type": "teams"}
     - Telefono:     {"target_number": "+573001234567", "target_type": "phone"}
-    
+
     En llamadas grupales de Teams, todos los participantes reciben la llamada
     y se unen a la misma sesión con OPTI.
     """
     if not acs_client:
         raise HTTPException(status_code=503, detail="ACS no configurado. Configura ACS_CONNECTION_STRING en .env")
-    
+
     if not CALLBACK_URI:
         raise HTTPException(
-            status_code=503, 
+            status_code=503,
             detail="CALLBACK_URI no configurado. Usa ngrok y configura la URL en .env"
         )
-    
+
     try:
         targets = request.all_targets
         participants = []
         join_url: Optional[str] = None
 
-        # Crear reunión de Teams si se solicita un link compartible
         if request.generate_meeting_link:
             if not graph_configured():
                 raise HTTPException(
@@ -525,6 +934,7 @@ async def make_outbound_call(request: OutboundCallRequest):
             enable_bidirectional=True,
             audio_format=AudioFormat.PCM16_K_MONO
         )
+
         print(f"[CALL] WebSocket URL: {websocket_url}/ws/media")
         print(f"[CALL] Bidirectional audio: ENABLED")
 
@@ -534,9 +944,9 @@ async def make_outbound_call(request: OutboundCallRequest):
             media_streaming=media_streaming,
             source_display_name=request.display_name
         )
-        
+
         call_id = call_result.call_connection_id
-        
+
         active_calls[call_id] = {
             "call_id": call_id,
             "status": "connecting",
@@ -551,9 +961,9 @@ async def make_outbound_call(request: OutboundCallRequest):
             "first_message": request.first_message,
             "join_url": join_url
         }
-        
+
         print(f"[CALL] Llamada iniciada: {call_id} -> {targets}")
-        
+
         return CallInfo(
             call_id=call_id,
             status="connecting",
@@ -561,7 +971,7 @@ async def make_outbound_call(request: OutboundCallRequest):
             started_at=active_calls[call_id]["started_at"],
             join_url=join_url
         )
-        
+
     except Exception as e:
         print(f"[CALL] Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -577,10 +987,16 @@ async def list_calls():
                 "call_id": call_id,
                 "status": info.get("status"),
                 "provider": info.get("provider", "acs"),
+                "channel": info.get("channel"),
+                "response_channel": info.get("response_channel"),
                 "targets": info.get("targets", []),
                 "from_number": info.get("from_number"),
                 "to_number": info.get("to_number"),
                 "started_at": info.get("started_at"),
+                "updated_at": info.get("updated_at"),
+                "last_user_text": info.get("last_user_text"),
+                "last_response_text": info.get("last_response_text"),
+                "last_response_audio_url": info.get("last_response_audio_url"),
                 "join_url": info.get("join_url")
             }
             for call_id, info in active_calls.items()
@@ -593,18 +1009,17 @@ async def hangup_call(call_id: str):
     """Termina una llamada"""
     if call_id not in active_calls:
         raise HTTPException(status_code=404, detail="Llamada no encontrada")
-    
+
     if not acs_client:
         raise HTTPException(status_code=503, detail="ACS no configurado")
-    
+
     try:
         call_connection = acs_client.get_call_connection(call_id)
         call_connection.hang_up(is_for_everyone=True)
-        
-        # Limpiar
+
         if call_id in active_calls:
             del active_calls[call_id]
-        
+
         return {"status": "call_ended", "call_id": call_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -618,61 +1033,50 @@ async def hangup_call(call_id: str):
 async def acs_callback(request: Request):
     """
     Recibe eventos de Azure Communication Services.
-    
-    Eventos importantes:
-    - CallConnected: La llamada se conecto
-    - CallDisconnected: La llamada termino
-    - ParticipantsUpdated: Cambios en participantes
-    - MediaStreamingStarted: El streaming de audio inicio
-    - MediaStreamingStopped: El streaming de audio termino
     """
     try:
         events = await request.json()
-        
-        # ACS puede enviar multiples eventos
+
         if not isinstance(events, list):
             events = [events]
-        
+
         for event in events:
             event_type = event.get("type", "")
             call_id = event.get("data", {}).get("callConnectionId", "")
-            
+
             print(f"[ACS Event] {event_type} - Call: {call_id}")
-            
-            # Log detallado para eventos de error
+
             if event_type == "Microsoft.Communication.CreateCallFailed":
                 data = event.get("data", {})
                 result_info = data.get("resultInformation", {})
-                error_code = result_info.get("code", "N/A")
-                sub_code = result_info.get("subCode", "N/A")
-                message = result_info.get("message", "Sin mensaje")
                 print(f"[ACS ERROR] CreateCallFailed:")
-                print(f"  - Code: {error_code}")
-                print(f"  - SubCode: {sub_code}")
-                print(f"  - Message: {message}")
+                print(f"  - Code: {result_info.get('code', 'N/A')}")
+                print(f"  - SubCode: {result_info.get('subCode', 'N/A')}")
+                print(f"  - Message: {result_info.get('message', 'Sin mensaje')}")
                 print(f"  - Full data: {json.dumps(data, indent=2)}")
-            
+
             if event_type == "Microsoft.Communication.CallConnected":
-                # Llamada conectada - iniciar conexion con OpenAI
                 if call_id in active_calls:
                     active_calls[call_id]["status"] = "connected"
-                    # Aqui iniciarias la conexion WebSocket con OpenAI
                     asyncio.create_task(connect_to_openai_realtime(call_id))
-                    
+
             elif event_type == "Microsoft.Communication.CallDisconnected":
-                # Llamada terminada - obtener razón
                 data = event.get("data", {})
                 result_info = data.get("resultInformation", {})
                 if result_info:
-                    print(f"[ACS] CallDisconnected reason: Code={result_info.get('code')}, SubCode={result_info.get('subCode')}, Message={result_info.get('message')}")
-                
+                    print(
+                        f"[ACS] CallDisconnected reason: "
+                        f"Code={result_info.get('code')}, "
+                        f"SubCode={result_info.get('subCode')}, "
+                        f"Message={result_info.get('message')}"
+                    )
+
                 if call_id in active_calls:
-                    # Cerrar conexion con OpenAI si existe
                     openai_ws = active_calls[call_id].get("openai_ws")
                     if openai_ws:
                         await openai_ws.close()
                     del active_calls[call_id]
-                    
+
             elif event_type == "Microsoft.Communication.MediaStreamingStarted":
                 print(f"[ACS] Media streaming iniciado para {call_id}")
 
@@ -680,21 +1084,17 @@ async def acs_callback(request: Request):
                 print(f"[ACS] Media streaming detenido para {call_id}")
 
             elif event_type == "Microsoft.Communication.MediaStreamingFailed":
-                # Media streaming falló - obtener detalles
                 data = event.get("data", {})
                 result_info = data.get("resultInformation", {})
-                error_code = result_info.get("code", "N/A")
-                sub_code = result_info.get("subCode", "N/A")
-                message = result_info.get("message", "Sin mensaje")
                 print(f"[ACS ERROR] MediaStreamingFailed:")
-                print(f"  - Code: {error_code}")
-                print(f"  - SubCode: {sub_code}")
-                print(f"  - Message: {message}")
+                print(f"  - Code: {result_info.get('code', 'N/A')}")
+                print(f"  - SubCode: {result_info.get('subCode', 'N/A')}")
+                print(f"  - Message: {result_info.get('message', 'Sin mensaje')}")
                 print(f"  - WebSocket URL esperada: {CALLBACK_URI}/ws/media")
                 print(f"  - Full data: {json.dumps(data, indent=2)}")
-        
+
         return {"status": "ok"}
-        
+
     except Exception as e:
         print(f"Error procesando callback ACS: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
@@ -708,11 +1108,6 @@ async def acs_callback(request: Request):
 async def media_websocket(websocket: WebSocket):
     """
     WebSocket que recibe el audio de ACS y lo envia a OpenAI Realtime.
-
-    ACS envia audio en formato PCM 16-bit, 16kHz, mono.
-    OpenAI Realtime espera PCM 16-bit, 24kHz, mono.
-
-    NOTA: Puede requerir resampling de 16kHz a 24kHz.
     """
     print(f"[Media WS] Intentando aceptar conexion...")
     print(f"[Media WS] Headers: {websocket.headers}")
@@ -721,11 +1116,9 @@ async def media_websocket(websocket: WebSocket):
     await websocket.accept()
     print("[Media WS] Conexion aceptada de ACS")
 
-    # Obtener call_id desde los headers (ACS lo envía aquí)
     call_id = websocket.headers.get("x-ms-call-connection-id")
     print(f"[Media WS] Call ID desde headers: {call_id}")
 
-    # Guardar WebSocket inmediatamente si tenemos el call_id
     if call_id and call_id in active_calls:
         active_calls[call_id]["media_ws"] = websocket
         print(f"[Media WS] ✅ WebSocket guardado para {call_id} (desde headers)")
@@ -738,48 +1131,42 @@ async def media_websocket(websocket: WebSocket):
         async for message in websocket.iter_text():
             data = json.loads(message)
 
-            # Primer mensaje contiene metadata
             if "kind" in data:
                 if data["kind"] == "AudioMetadata":
                     print(f"[Media WS] AudioMetadata recibido")
 
-                    # Intentar guardar el WebSocket si aún no está guardado
                     if call_id and call_id in active_calls and not active_calls[call_id].get("media_ws"):
                         active_calls[call_id]["media_ws"] = websocket
                         print(f"[Media WS] ✅ WebSocket guardado para {call_id} (desde AudioMetadata)")
 
                 elif data["kind"] == "AudioData":
-                    # Audio del usuario
                     audio_data = data.get("audioData", {}).get("data", "")
 
                     if call_id and call_id in active_calls and audio_data:
                         bot_muted = active_calls[call_id].get("bot_muted", False)
 
                         if bot_muted:
-                            # MODO VIGÍA: Enviar a Whisper para detectar "OPTI"
-                            # Esto ahorra dinero porque Whisper es más barato que Realtime
                             await add_audio_to_whisper_buffer(call_id, audio_data)
                         else:
-                            # MODO ACTIVO: Enviar a OpenAI Realtime
                             openai_ws = active_calls[call_id].get("openai_ws")
 
                             if openai_ws:
-                                # Resamplear de 16kHz (ACS) a 24kHz (OpenAI)
-                                audio_24khz = resample_audio(audio_data, input_rate=16000, output_rate=24000)
+                                audio_24khz = resample_audio(
+                                    audio_data,
+                                    input_rate=16000,
+                                    output_rate=24000
+                                )
 
-                                # Enviar audio a OpenAI Realtime
                                 await openai_ws.send(json.dumps({
                                     "type": "input_audio_buffer.append",
                                     "audio": audio_24khz
                                 }))
                             else:
-                                # OpenAI aun no esta conectado, esperar
                                 await asyncio.sleep(0.1)
 
     except Exception as e:
         print(f"[Media WS] Error: {e}")
     finally:
-        # Limpiar referencia al WebSocket de media
         if call_id and call_id in active_calls:
             active_calls[call_id]["media_ws"] = None
         print(f"[Media WS] Desconectado: {call_id}")
@@ -793,12 +1180,8 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
     """
     Establece conexion WebSocket con OpenAI Realtime API
     y maneja el flujo de audio bidireccional con reconexión automática.
-
-    Args:
-        call_id: ID de la llamada
-        retry_count: Número de reintentos realizados
     """
-    MAX_RETRIES = 3  # Definir al inicio para uso en except blocks
+    MAX_RETRIES = 3
 
     if call_id not in active_calls:
         print(f"[OpenAI] Call {call_id} ya no existe en active_calls")
@@ -811,6 +1194,10 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
     if retry_count > 0:
         print(f"[OpenAI] 🔄 Reintento {retry_count}/{MAX_RETRIES} para {call_id}")
 
+    if not OPENAI_API_KEY:
+        print("[OpenAI] ❌ OPENAI_API_KEY no configurada")
+        return
+
     url = "wss://api.openai.com/v1/realtime?model=gpt-realtime-mini-2025-12-15"
 
     try:
@@ -820,16 +1207,13 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
                 "Authorization": f"Bearer {OPENAI_API_KEY}",
                 "OpenAI-Beta": "realtime=v1"
             },
-            ping_interval=20,  # Enviar ping cada 20 segundos
-            ping_timeout=10,   # Timeout de 10 segundos para pong
-            close_timeout=10   # Timeout para cierre graceful
+            ping_interval=20,
+            ping_timeout=10,
+            close_timeout=10
         ) as ws:
-            # Guardar referencia
             active_calls[call_id]["openai_ws"] = ws
             print(f"[OpenAI] Conectado para llamada: {call_id}")
-            
-            # Configurar sesion con tools de DB2
-            # NOTA: Usamos modalities=["text"] para obtener solo texto (TTS lo hace ACS)
+
             await ws.send(json.dumps({
                 "type": "session.update",
                 "session": {
@@ -845,12 +1229,11 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
                         "prefix_padding_ms": 300,
                         "silence_duration_ms": 500
                     },
-                    "tools": tools,  # Agregar herramientas de DB2
+                    "tools": tools,
                     "temperature": 0.8
                 }
             }))
-            
-            # Saludo inicial - solo en la primera conexión (no en reconexiones)
+
             if retry_count == 0:
                 first_msg = active_calls[call_id].get("first_message")
                 prompt_text = first_msg if first_msg else "Saluda al usuario brevemente"
@@ -868,8 +1251,7 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
                 await ws.send(json.dumps({"type": "response.create"}))
             else:
                 print(f"[OpenAI] Reconexión exitosa, continuando conversación...")
-            
-            # Procesar mensajes de OpenAI
+
             async for message in ws:
                 if call_id not in active_calls:
                     break
@@ -877,15 +1259,12 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
                 event = json.loads(message)
                 event_type = event.get("type")
 
-                # Audio de respuesta - enviar a ACS
                 if event_type == "response.audio.delta":
                     audio_b64 = event.get("delta", "")
                     if audio_b64:
-                        # Enviar audio a ACS (con resampling 24kHz → 16kHz)
                         await send_audio_to_acs(call_id, audio_b64)
 
                 elif event_type == "response.audio_transcript.done":
-                    # Log del texto para debugging
                     transcript = event.get("transcript", "")
                     if transcript:
                         print(f"[OpenAI] 📝 Dijo: {transcript}")
@@ -893,7 +1272,6 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
                 elif event_type == "response.done":
                     print(f"[OpenAI] Respuesta completada para {call_id}")
 
-                # Log de otros eventos importantes para debugging
                 elif event_type == "response.output_item.added":
                     item = event.get("item", {})
                     if item.get("type") == "function_call":
@@ -904,103 +1282,78 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
                     if item.get("type") == "function_call":
                         print(f"[OpenAI] 🔧 Function call completado: {item.get('name')}")
 
-                # Manejo de Function Calling
                 elif event_type == "response.function_call_arguments.done":
-                    # El modelo quiere ejecutar una función
                     function_name = event.get("name")
                     function_args_str = event.get("arguments", "{}")
-                    function_call_id = event.get("call_id")  # Este es el ID correcto
+                    function_call_id = event.get("call_id")
 
                     print(f"[OpenAI] Function call: {function_name}")
                     print(f"[OpenAI] Call ID: {function_call_id}")
                     print(f"[OpenAI] Arguments: {function_args_str}")
 
                     try:
-                        # Parsear argumentos
                         function_args = json.loads(function_args_str) if function_args_str else {}
 
-                        # Manejar función especial set_bot_muted
                         if function_name == "set_bot_muted":
                             muted = function_args.get("muted", False)
                             active_calls[call_id]["bot_muted"] = muted
 
-                            status = "SILENCIADO" if muted else "REACTIVADO"
-                            print(f"[BOT] {'🔇' if muted else '🔊'} Comando detectado: Bot {status}")
-                            print(f"[BOT] Call ID: {call_id}")
-
-                            if muted:
-                                function_result = json.dumps({
-                                    "success": True,
-                                    "muted": True,
-                                    "message": "MODO SILENCIADO ACTIVADO por comando 'OPTI HAZ SILENCIO'. A partir de ahora, SOLO responde a comandos de reactivación que empiecen con 'OPTI' como 'OPTI VUELVE A HABLAR' o 'OPTI HABLA'. IGNORA todas las demás conversaciones, preguntas y menciones de 'silencio' o 'habla' que NO incluyan tu nombre 'OPTI'."
-                                })
-                            else:
-                                function_result = json.dumps({
-                                    "success": True,
-                                    "muted": False,
-                                    "message": "MODO SILENCIADO DESACTIVADO por comando 'OPTI VUELVE A HABLAR'. Ya puedes participar normalmente en la conversación y responder a todas las preguntas. Recuerda que solo debes silenciarte cuando escuches comandos que empiecen con 'OPTI'."
-                                })
+                            function_result = json.dumps({
+                                "success": True,
+                                "muted": muted,
+                                "message": "Estado de silencio actualizado."
+                            })
                         else:
-                            # Ejecutar funciones normales (DB2, etc.)
                             function_result = execute_function(function_name, function_args)
 
-                        print(f"[OpenAI] Resultado de función: {function_result[:200]}...")
+                        print(f"[OpenAI] Resultado de función: {str(function_result)[:200]}...")
 
-                        # Enviar resultado de la función a OpenAI
                         await ws.send(json.dumps({
                             "type": "conversation.item.create",
                             "item": {
                                 "type": "function_call_output",
-                                "call_id": function_call_id,  # Usar el ID correcto
+                                "call_id": function_call_id,
                                 "output": function_result
                             }
                         }))
 
                         print(f"[OpenAI] ✅ Resultado enviado para call_id: {function_call_id}")
 
-                        # Solicitar que genere una respuesta con el resultado
                         await ws.send(json.dumps({"type": "response.create"}))
 
                     except Exception as e:
                         print(f"[OpenAI] Error ejecutando función: {str(e)}")
-                        # Enviar error a OpenAI
+
                         await ws.send(json.dumps({
                             "type": "conversation.item.create",
                             "item": {
                                 "type": "function_call_output",
-                                "call_id": function_call_id,  # Usar el ID correcto
+                                "call_id": function_call_id,
                                 "output": json.dumps({"error": str(e)})
                             }
                         }))
                         await ws.send(json.dumps({"type": "response.create"}))
 
-                # Manejo de interrupciones - usuario empieza a hablar
                 elif event_type == "input_audio_buffer.speech_started":
                     print(f"[OpenAI] 🎤 Usuario empezó a hablar - INTERRUPCIÓN")
-                    # Marcar que el usuario está hablando
                     active_calls[call_id]["user_speaking"] = True
-                    # Cancelar la respuesta actual del bot
                     await ws.send(json.dumps({"type": "response.cancel"}))
-                    # Detener el audio que se está reproduciendo en ACS
                     await stop_audio_in_acs(call_id)
 
                 elif event_type == "input_audio_buffer.speech_stopped":
                     print(f"[OpenAI] 🎤 Usuario dejó de hablar")
-                    # El usuario terminó de hablar, permitir que el bot responda
                     active_calls[call_id]["user_speaking"] = False
 
                 elif event_type == "error":
-                    error_data = event.get('error', {})
-                    print(f"[OpenAI] ❌ Error event: {error_data}")
+                    print(f"[OpenAI] ❌ Error event: {event.get('error')}")
 
     except websockets.exceptions.ConnectionClosed as e:
         print(f"[OpenAI] ⚠️ WebSocket cerrado inesperadamente para {call_id}")
         print(f"[OpenAI] Código: {e.code}, Razón: {e.reason}")
 
-        # Intentar reconectar si la llamada sigue activa
         if call_id in active_calls and active_calls[call_id].get("status") == "connected":
             print(f"[OpenAI] 🔄 Intentando reconectar... (intento {retry_count + 1}/{MAX_RETRIES})")
-            await asyncio.sleep(2)  # Esperar 2 segundos antes de reconectar
+            await asyncio.sleep(2)
             await connect_to_openai_realtime(call_id, retry_count + 1)
         else:
             print(f"[OpenAI] Llamada {call_id} ya terminó, no reconectar")
@@ -1008,7 +1361,6 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
     except websockets.exceptions.WebSocketException as e:
         print(f"[OpenAI] ❌ Error de WebSocket: {type(e).__name__}: {e}")
 
-        # Intentar reconectar
         if call_id in active_calls and retry_count < MAX_RETRIES:
             print(f"[OpenAI] 🔄 Intentando reconectar... (intento {retry_count + 1}/{MAX_RETRIES})")
             await asyncio.sleep(2)
@@ -1017,7 +1369,6 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
     except asyncio.TimeoutError:
         print(f"[OpenAI] ⏱️ Timeout en la conexión para {call_id}")
 
-        # Intentar reconectar
         if call_id in active_calls and retry_count < MAX_RETRIES:
             print(f"[OpenAI] 🔄 Intentando reconectar... (intento {retry_count + 1}/{MAX_RETRIES})")
             await asyncio.sleep(2)
@@ -1041,35 +1392,17 @@ async def connect_to_openai_realtime(call_id: str, retry_count: int = 0):
 def resample_audio(audio_b64: str, input_rate: int = 24000, output_rate: int = 16000) -> str:
     """
     Resamplea audio PCM 16-bit de una tasa de muestreo a otra.
-
-    Args:
-        audio_b64: Audio en base64 (PCM 16-bit)
-        input_rate: Tasa de muestreo de entrada (Hz)
-        output_rate: Tasa de muestreo de salida (Hz)
-
-    Returns:
-        Audio resampleado en base64 (PCM 16-bit)
     """
     try:
-        # Decodificar de base64
         audio_bytes = base64.b64decode(audio_b64)
-
-        # Convertir bytes a array numpy (int16)
         audio_int16 = np.frombuffer(audio_bytes, dtype=np.int16)
-
-        # Convertir a float para procesamiento
         audio_float = audio_int16.astype(np.float32)
 
-        # Calcular número de muestras de salida
         num_samples = int(len(audio_float) * output_rate / input_rate)
 
-        # Resamplear usando scipy
         resampled = signal.resample(audio_float, num_samples)
-
-        # Convertir de vuelta a int16
         resampled_int16 = np.clip(resampled, -32768, 32767).astype(np.int16)
 
-        # Convertir a bytes y luego a base64
         resampled_bytes = resampled_int16.tobytes()
         resampled_b64 = base64.b64encode(resampled_bytes).decode('utf-8')
 
@@ -1077,16 +1410,12 @@ def resample_audio(audio_b64: str, input_rate: int = 24000, output_rate: int = 1
 
     except Exception as e:
         print(f"[Audio] Error resampleando: {e}")
-        return audio_b64  # Devolver original si falla
+        return audio_b64
 
 
 async def stop_audio_in_acs(call_id: str):
     """
     Envía comando para detener el audio actual en ACS.
-    Esto permite interrumpir al bot cuando el usuario empieza a hablar.
-
-    Args:
-        call_id: ID de la llamada
     """
     if call_id not in active_calls:
         return
@@ -1096,7 +1425,6 @@ async def stop_audio_in_acs(call_id: str):
         return
 
     try:
-        # Comando para detener audio según documentación de ACS
         message = {
             "Kind": "StopAudio",
             "StopAudio": {},
@@ -1111,21 +1439,15 @@ async def stop_audio_in_acs(call_id: str):
 async def send_audio_to_acs(call_id: str, audio_b64: str):
     """
     Envia audio desde OpenAI a ACS a través del WebSocket de media.
-    Convierte de 24kHz (OpenAI) a 16kHz (ACS).
-
-    Args:
-        call_id: ID de la llamada
-        audio_b64: Audio en base64 desde OpenAI (PCM 16-bit, 24kHz)
     """
     if call_id not in active_calls:
         return
 
-    # Verificar si el bot está silenciado o si hay interrupción activa
     if active_calls[call_id].get("bot_muted", False):
-        return  # No enviar audio si está silenciado
+        return
 
     if active_calls[call_id].get("user_speaking", False):
-        return  # No enviar audio si el usuario está hablando (interrupción)
+        return
 
     media_ws = active_calls[call_id].get("media_ws")
 
@@ -1133,19 +1455,16 @@ async def send_audio_to_acs(call_id: str, audio_b64: str):
         return
 
     try:
-        # Resamplear de 24kHz a 16kHz
         audio_16khz = resample_audio(audio_b64, input_rate=24000, output_rate=16000)
 
-        # Formato de mensaje para ACS - DEBE usar mayúsculas según documentación
         message = {
-            "Kind": "AudioData",  # Mayúscula
+            "Kind": "AudioData",
             "AudioData": {
-                "Data": audio_16khz  # Mayúscula
+                "Data": audio_16khz
             },
             "StopAudio": None
         }
 
-        # Enviar a ACS
         await media_ws.send_text(json.dumps(message))
 
     except Exception as e:
@@ -1156,28 +1475,20 @@ async def send_audio_to_acs(call_id: str, audio_b64: str):
 # WHISPER API (Modo vigía - detección de palabra clave)
 # ============================================================================
 
-# Configuración de Whisper
-WHISPER_BUFFER_DURATION_SECONDS = 5  # Cada cuántos segundos enviar a Whisper
-WHISPER_SAMPLE_RATE = 16000  # 16kHz (formato de ACS)
-WHISPER_BYTES_PER_SECOND = WHISPER_SAMPLE_RATE * 2  # 16-bit = 2 bytes por muestra
+WHISPER_BUFFER_DURATION_SECONDS = 5
+WHISPER_SAMPLE_RATE = 16000
+WHISPER_BYTES_PER_SECOND = WHISPER_SAMPLE_RATE * 2
 WHISPER_BUFFER_SIZE = WHISPER_BUFFER_DURATION_SECONDS * WHISPER_BYTES_PER_SECOND
 
 
 def pcm_to_wav(pcm_data: bytes, sample_rate: int = 16000) -> bytes:
     """
     Convierte audio PCM raw a formato WAV para Whisper API.
-
-    Args:
-        pcm_data: Audio en bytes (PCM 16-bit mono)
-        sample_rate: Tasa de muestreo (default 16kHz)
-
-    Returns:
-        Audio en formato WAV como bytes
     """
     wav_buffer = io.BytesIO()
     with wave.open(wav_buffer, 'wb') as wav_file:
-        wav_file.setnchannels(1)  # Mono
-        wav_file.setsampwidth(2)  # 16-bit = 2 bytes
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
         wav_file.setframerate(sample_rate)
         wav_file.writeframes(pcm_data)
     wav_buffer.seek(0)
@@ -1187,18 +1498,10 @@ def pcm_to_wav(pcm_data: bytes, sample_rate: int = 16000) -> bytes:
 async def transcribe_with_whisper(audio_bytes: bytes) -> str:
     """
     Envía audio a OpenAI Whisper API para transcripción.
-
-    Args:
-        audio_bytes: Audio en formato PCM 16-bit, 16kHz, mono
-
-    Returns:
-        Texto transcrito o string vacío si falla
     """
     try:
-        # Convertir PCM a WAV
         wav_data = pcm_to_wav(audio_bytes)
 
-        # Preparar request para Whisper API
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 "https://api.openai.com/v1/audio/transcriptions",
@@ -1210,7 +1513,7 @@ async def transcribe_with_whisper(audio_bytes: bytes) -> str:
                 },
                 data={
                     "model": "whisper-1",
-                    "language": "es"  # Español
+                    "language": "es"
                 },
                 timeout=10.0
             )
@@ -1232,11 +1535,7 @@ async def transcribe_with_whisper(audio_bytes: bytes) -> str:
 
 async def process_whisper_buffer(call_id: str):
     """
-    Procesa el buffer de audio acumulado con Whisper y detecta la palabra clave "OPTI".
-    Si detecta "OPTI", reactiva el bot y envía el audio a OpenAI Realtime.
-
-    Args:
-        call_id: ID de la llamada
+    Procesa el buffer de audio acumulado con Whisper y detecta la palabra clave OPTI.
     """
     if call_id not in active_calls:
         return
@@ -1244,38 +1543,29 @@ async def process_whisper_buffer(call_id: str):
     call_data = active_calls[call_id]
     audio_buffer = call_data.get("whisper_buffer", b"")
 
-    # Verificar si hay suficiente audio
     if len(audio_buffer) < WHISPER_BUFFER_SIZE:
         return
 
-    # Extraer el buffer para procesar
     buffer_to_process = audio_buffer[:WHISPER_BUFFER_SIZE]
     call_data["whisper_buffer"] = audio_buffer[WHISPER_BUFFER_SIZE:]
 
-    # Transcribir con Whisper
     transcript = await transcribe_with_whisper(buffer_to_process)
 
     if not transcript:
         return
 
-    # Buscar palabra clave "OPTI" (case insensitive)
     transcript_upper = transcript.upper()
 
     if "OPTI" in transcript_upper:
         print(f"[Whisper] 🎯 Palabra clave 'OPTI' detectada!")
         print(f"[Whisper] 📣 Reactivando bot para call {call_id}")
 
-        # Desmutar el bot
         call_data["bot_muted"] = False
-
-        # Limpiar el buffer de Whisper
         call_data["whisper_buffer"] = b""
 
-        # Enviar el contexto a OpenAI Realtime para que responda
         openai_ws = call_data.get("openai_ws")
         if openai_ws:
             try:
-                # Enviar mensaje de texto con lo que dijo el usuario
                 await openai_ws.send(json.dumps({
                     "type": "conversation.item.create",
                     "item": {
@@ -1293,26 +1583,19 @@ async def process_whisper_buffer(call_id: str):
 async def add_audio_to_whisper_buffer(call_id: str, audio_b64: str):
     """
     Agrega audio al buffer de Whisper para procesamiento en modo vigía.
-
-    Args:
-        call_id: ID de la llamada
-        audio_b64: Audio en base64 (PCM 16-bit, 16kHz de ACS)
     """
     if call_id not in active_calls:
         return
 
     try:
-        # Decodificar audio
         audio_bytes = base64.b64decode(audio_b64)
 
-        # Agregar al buffer
         call_data = active_calls[call_id]
         if "whisper_buffer" not in call_data:
             call_data["whisper_buffer"] = b""
 
         call_data["whisper_buffer"] += audio_bytes
 
-        # Procesar si hay suficiente audio
         if len(call_data["whisper_buffer"]) >= WHISPER_BUFFER_SIZE:
             await process_whisper_buffer(call_id)
 
@@ -1331,15 +1614,13 @@ def is_business_hours() -> bool:
     Retorna False si es fuera de horario (llamar por telefono).
     """
     now = datetime.now()
-    
-    # Lunes a Viernes
-    if now.weekday() >= 5:  # Sabado (5) o Domingo (6)
+
+    if now.weekday() >= 5:
         return False
-    
-    # 8:00 AM a 6:00 PM
+
     if now.hour < 8 or now.hour >= 18:
         return False
-    
+
     return True
 
 
