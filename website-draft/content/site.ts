@@ -1,0 +1,113 @@
+import type { Media } from "./solutions";
+export const site = {
+  name: "Optimize IT",
+  origin: "https://www.optimizeit.co",
+  draft: true,
+  title: "Tecnología para proteger, operar y transformar tu negocio.",
+  description:
+    "Infraestructura, nube, automatización y servicios especializados para mantener tu tecnología disponible, protegida y preparada para evolucionar.",
+  logo: {
+    type: "image",
+    src: "/media/brand/optimize-it-logo.png",
+    alt: "Optimize IT",
+  } as Media,
+  heroMedia: undefined as Media | undefined,
+  contactUrl: undefined as string | undefined,
+  social: [
+    {
+      label: "LinkedIn",
+      href: "https://www.linkedin.com/company/optimize-it-s.a.s./",
+    },
+    { label: "Facebook", href: "https://www.facebook.com/OptimizeITGroup" },
+  ],
+  heroFooter: ["PROTECT · OPERATE · TRANSFORM", "Optimize IT / Colombia"],
+  privacyUrl: "https://optimizeit.co/politica-de-privacidad/",
+  nav: [
+    { label: "Soluciones", href: "/home-v2/#soluciones" },
+    { label: "Experiencia", href: "/home-v2/#experiencia" },
+    { label: "Casos de éxito", href: "/home-v2/#casos" },
+    { label: "Nosotros", href: "/home-v2/#nosotros" },
+  ],
+  hero: {
+    eyebrow: "TECNOLOGÍA EMPRESARIAL · OPTIMIZE IT",
+    lines: ["Proteger.", "Operar.", "Transformar."],
+    lead: "Tu negocio necesita avanzar. Tu tecnología también.",
+    primary: "Conoce nuestras soluciones",
+    secondary: "Hablemos de tu proyecto",
+    diagramTitle: "CONTINUIDAD DEL NEGOCIO",
+    diagramCore: "Tu negocio",
+    diagramNodes: [
+      "Información protegida",
+      "Operación con contexto",
+      "Infraestructura preparada",
+    ],
+    diagramCaption: "Estrategia, implementación y operación conectadas.",
+  },
+  labels: {
+    draft: "Borrador privado · Sin publicar",
+    home: "Inicio",
+    contact: "Contacto",
+    menu: "Menú",
+    close: "Cerrar menú",
+    skip: "Saltar al contenido",
+    portfolio: "01 / SOLUCIONES",
+    portfolioTitle: "Cada reto tiene un punto de partida.",
+    portfolioDescription:
+      "Explora cómo protegemos, operamos y transformamos la tecnología que sostiene tu negocio.",
+    steps: [
+      "El reto",
+      "Nuestra propuesta",
+      "Nuestra experiencia",
+      "Casos de éxito",
+    ],
+    previous: "Solución anterior",
+    next: "Solución siguiente",
+    pause: "Pausar recorrido",
+    resume: "Reanudar recorrido",
+    automatic: "Recorrido automático · 15 s",
+    manual: "Exploración manual",
+    temporary: "Recorrido en pausa",
+    detail: "Explorar la solución",
+    technologies: "Tecnologías con las que trabajamos",
+    noCase: "Construyamos el próximo caso contigo.",
+    noCaseDescription:
+      "Conversemos sobre un reto concreto y definamos juntos su alcance y criterios de éxito.",
+    caseChallenge: "Reto",
+    caseSolution: "Solución",
+    caseResult: "Resultado",
+    casePending: "Ficha pendiente de validación",
+    metricNote:
+      "Datos proporcionados por Optimize IT. El período de medición y el alcance se documentarán antes del lanzamiento.",
+    source: "Fuente",
+    experienceEyebrow: "02 / EXPERIENCIA",
+    experienceTitle: "La confianza se construye operando.",
+    experienceDescription:
+      "Detrás de cada plataforma hay información que proteger, servicios que mantener y personas que necesitan respuestas.",
+    caseEyebrow: "03 / CASOS DE ÉXITO",
+    caseTitle: "Experiencia aplicada a retos reales.",
+    partnerEyebrow: "04 / ECOSISTEMA",
+    partnerTitle: "La tecnología correcta para cada desafío.",
+    partnerDescription:
+      "Integramos tecnologías empresariales según las necesidades de cada arquitectura.",
+    aboutTitle: "Siempre hay una mejor forma de hacer las cosas.",
+    aboutDescription:
+      "En Optimize IT combinamos infraestructura, nube, automatización e inteligencia operacional con experiencia en entornos empresariales y financieros.",
+    ctaTitle: "¿Qué necesita resolver hoy tu negocio?",
+    ctaDescription:
+      "Empecemos por tu reto. Definamos una ruta tecnológica que tenga sentido para tu operación.",
+    ctaButton: "Hablemos de tu proyecto",
+    contactDraft:
+      "Vista previa: las solicitudes comerciales están desactivadas.",
+    contactDialogTitle: "Preparemos la conversación",
+    contactDialogDescription:
+      "Este borrador no envía datos. El canal comercial definitivo se conectará antes del lanzamiento.",
+    contactClose: "Volver al borrador",
+    privacy: "Privacidad",
+    footerTagline: "Tecnología con propósito. Experiencia que responde.",
+    sources: "Referencias",
+    back: "Todas las soluciones",
+    caseLink: "Ver experiencia",
+    progress: "Tiempo transcurrido del recorrido",
+  },
+  legal: "© 2026 Optimize IT",
+};
