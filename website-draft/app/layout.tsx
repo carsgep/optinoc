@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { site } from "@/content/site";
 import { Navigation, Footer } from "@/components/SiteChrome";
 import "./globals.css";
+import "./visual-carousel.css";
 export const metadata: Metadata = {
   metadataBase: new URL(site.origin),
   title: { default: site.name, template: `%s | ${site.name}` },

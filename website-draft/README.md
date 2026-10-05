@@ -1,6 +1,6 @@
-# Optimize IT — HOME v2 (borrador local)
+# Optimize IT — HOME v2 (borrador)
 
-Propuesta independiente en la rama **feature/optimizeit-home-v2** del repositorio `carsgep/optinoc`. No se ha publicado ni modificado el home existente. No hay formularios conectados, analítica externa ni credenciales de hosting.
+Propuesta independiente en la rama **feature/optimizeit-home-v2** del repositorio `carsgep/optinoc`. La copia de revisión está alojada en https://optimizeit-home-borrador.optimize-it-0119.chatgpt.site/home-v2/. No se ha modificado el home existente de optimizeit.co. No hay formularios conectados, analítica externa ni credenciales de hosting.
 
 ## Inspección y decisiones técnicas
 
@@ -8,7 +8,7 @@ Propuesta independiente en la rama **feature/optimizeit-home-v2** del repositori
 - La referencia pública `/optinoc2/` es HTML/CSS/JavaScript. Se reutilizaron colores, tipografías, contenido funcional, logo y captura del producto. No se copiaron el formulario PHP ni los scripts de seguimiento.
 - Next.js 16.3.8, React y TypeScript, con exportación estática. El resultado podría servirse en cPanel sin servidor Node, tras revisar un destino separado y autorizar su publicación.
 - CSS con tokens y componentes reutilizables en lugar de Tailwind, evitando una capa adicional para este sistema visual.
-- No hay `app/page.tsx`: el borrador no reemplaza `/`. No se hicieron push, merge, conexión a cPanel ni despliegues.
+- No hay `app/page.tsx`: el borrador no reemplaza `/`. La rama se comparte en GitHub y una copia estática se aloja de forma independiente en Sites. No se hizo merge ni conexión a cPanel.
 
 ## Ejecución local
 
@@ -48,7 +48,7 @@ Para revisar la exportación sin el servidor de desarrollo, ejecutar `node scrip
 
 Las páginas se generan con los mismos datos y componentes del carrusel. Las cuatro etapas están en su HTML estático. Cada solución tiene title, descripción, canonical, OpenGraph y Service JSON-LD.
 
-Mientras `site.draft` sea `true`, las páginas llevan **noindex, nofollow** y robots bloquea la indexación. Esto no es un control de acceso: la privacidad actual procede del servidor local. Cambiar esta bandera no publica ni activa formularios.
+Mientras `site.draft` sea `true`, las páginas llevan **noindex, nofollow** y robots bloquea la indexación. Esto no es un control de acceso: la copia alojada actualmente permite acceso público mediante su enlace. Cambiar esta bandera no publica ni activa formularios.
 
 ## Archivos creados y arquitectura
 
@@ -56,7 +56,7 @@ Mientras `site.draft` sea `true`, las páginas llevan **noindex, nofollow** y ro
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `content/site.ts`                                       | Copy global, navegación, hero, CTA, logo, redes y estado de borrador               |
 | `content/solutions.ts`                                  | Modelo tipado, seis soluciones, evidencias, fuentes, métricas, casos y tecnologías |
-| `components/Hero.tsx`                                   | Presentación y diagrama de continuidad reemplazable por imagen o video             |
+| `components/Hero.tsx`                                   | Componente de la versión anterior; ya no se renderiza en HOME             |
 | `components/SolutionsExperience.tsx`                    | Selector, timer, autoplay, swipe y teclado                                         |
 | `components/Story.tsx`                                  | Historias, MarketEvidence, Capability cards, ExperienceMetrics y SuccessCaseCard   |
 | `components/MediaBlock.tsx`                             | MediaBlock, ResponsiveImage y ResponsiveVideo                                      |
@@ -78,7 +78,7 @@ No se modifica ningún archivo preexistente del backend. Las carpetas `node_modu
 ## Decisiones de interacción
 
 - Las seis soluciones se ven en escritorio; en móvil se muestran en una rejilla 3×2.
-- Protect & Recover es la primera solución. El recorrido avanza cada 15 segundos de reproducción activa y vuelve a la primera al finalizar.
+- Protect & Recover es la primera solución. El recorrido avanza cada 10 segundos de reproducción activa y vuelve a la primera al finalizar.
 - Clic, controles anterior/siguiente, teclado o swipe entran en modo manual y cancelan el contador. Cambiar de etapa también detiene el recorrido.
 - El ratón o foco dentro de la historia, y la pestaña oculta, pausan temporalmente el contador. Al salir se conserva el tiempo restante.
 - El foco en el selector de soluciones también pausa el avance temporalmente, para que la selección no cambie mientras se navega con teclado.
@@ -92,7 +92,9 @@ No se modifica ningún archivo preexistente del backend. Las carpetas `node_modu
 
 **Textos:** `content/site.ts` para copy general y `content/solutions.ts` para cada solución. Mantener el contenido en esos objetos, sin duplicarlo entre rutas.
 
-**Imágenes:** guardar WebP/AVIF en `public/media/solutions/<slug>/` y configurar `media`:
+**Carrusel inicial:** `content/visuals.ts` configura los titulares, imágenes y el intervalo de 10 segundos. Las seis imágenes están en `public/media/solutions/<slug>/hero-v3.webp` y `hero-v3-mobile.webp`. `content/image-prompts.json` conserva los prompts originales. Las imágenes son ilustraciones conceptuales generadas. Hacer clic para leer detiene el avance.
+
+**Imágenes de las historias:** guardar WebP/AVIF en `public/media/solutions/<slug>/` y configurar `media`:
 
 ```ts
 media: {
@@ -103,7 +105,7 @@ media: {
 }
 ```
 
-**Videos:** mismo objeto con `type: 'video'`, `src` y `poster`. El componente incluye controles, `playsInline` y `preload="none"`, sin autoplay con sonido. Los videos con voz deberán incorporar subtítulos antes de publicación. El hero usa el mismo modelo mediante `site.heroMedia`.
+**Videos:** mismo objeto con `type: 'video'`, `src` y `poster`. El componente incluye controles, `playsInline` y `preload="none"`, sin autoplay con sonido. Los videos con voz deberán incorporar subtítulos antes de publicación. El carrusel inicial utiliza las imágenes configuradas en `content/visuals.ts`.
 
 **Logos:** `site.logo` para Optimize IT; los elementos de `technologies` admiten `logo: Media`. Actualmente los fabricantes se presentan por su nombre, sin recrear logos ni afirmar niveles de alianza.
 
@@ -144,7 +146,9 @@ Contenido público consultado el 3 de octubre de 2026; revisión final iniciada 
 
 Las comprobaciones automatizadas no sustituyen una revisión con lectores de pantalla ni métricas de campo de Core Web Vitals. La salida es estática, imágenes diferidas salvo el logo y videos sin descarga automática. No se ejecuta `test.py` del backend: corresponde a integraciones operativas ajenas al frontend aislado.
 
-## Resultado de verificación — 4 de octubre de 2026
+## Resultado de verificación de la versión anterior — 4 de octubre de 2026
+
+Estos resultados preceden al nuevo carrusel visual. La revisión móvil y la suite funcional deben actualizarse y repetirse para esta versión; `scripts/qa.cjs` aún contiene expectativas del carrusel anterior de 15 segundos.
 
 - Build estático, lint y TypeScript: correctos.
 - 16 comprobaciones funcionales completadas sobre `out/`, incluyendo temporizador, pausa manual, reanudación, pausa por hover, retorno circular, teclado, swipe, menú móvil y reduced motion.
@@ -156,3 +160,7 @@ Las comprobaciones automatizadas no sustituyen una revisión con lectores de pan
 - Ningún archivo preexistente del repositorio fue modificado; toda la propuesta permanece en `website-draft/`.
 
 Next.js genera además `AGENTS.md` y `CLAUDE.md` dentro del nuevo proyecto con instrucciones para futuras ediciones.
+
+## Entrega a otro desarrollador
+
+El frontend está íntegramente en `website-draft/`, en la rama `feature/optimizeit-home-v2`. Para entregar solo el frontend, exportar esta carpeta como ZIP; no necesita los archivos Python ni la configuración del backend. Para colaborar mediante GitHub, dar acceso al repositorio completo o utilizar un repositorio independiente para esta carpeta.

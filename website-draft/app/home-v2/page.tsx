@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { site } from "@/content/site";
 import { corporateMetrics, cases, technologies } from "@/content/solutions";
-import { Hero } from "@/components/Hero";
 import { SolutionsExperience } from "@/components/SolutionsExperience";
 import { ExperienceMetrics, SuccessCaseCard } from "@/components/Story";
 import { CTASection } from "@/components/SiteChrome";
@@ -21,7 +20,6 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main id="contenido">
-      <Hero />
       <SolutionsExperience />
       <section id="experiencia" className="experience-section">
         <div className="shell">

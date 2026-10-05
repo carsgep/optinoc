@@ -64,7 +64,7 @@ export const site = {
     next: "Solución siguiente",
     pause: "Pausar recorrido",
     resume: "Reanudar recorrido",
-    automatic: "Recorrido automático · 15 s",
+    automatic: "Recorrido automático · 10 s",
     manual: "Exploración manual",
     temporary: "Recorrido en pausa",
     detail: "Explorar la solución",

@@ -1,0 +1,42 @@
+{
+  "tool": "Built-in image_gen",
+  "generatedOn": "2026-10-04",
+  "assets": [
+    {
+      "slug": "protect-recover",
+      "prompt": "Use case: ads-marketing. Asset type: full-screen wide photographic website hero for Optimize IT, enterprise technology company. Cyber resilience and data recovery: a spectacular realistic glass-walled enterprise data vault, illuminated secure storage arrays with subtle emerald protected light, steel architectural layers enclosing luminous data storage. Sense of resilience and recovery. No padlock clipart or floating shield icons. Style: exceptionally polished high-end editorial technology photography / photorealistic visualization, realistic materials, premium corporate not gaming, not sci-fi fantasy. Composition: landscape 16:9, dramatic subject concentrated on right two-thirds, left third calm dark navy negative space suitable for white HTML headline; image remains richly detailed and interesting across full frame. Palette: deep navy #071321, steel blue #48a7d8, restrained lime green #8bd45f highlights. Moody sophisticated lighting, deep dimensional contrast, no oversaturated glow. No text, no words, no logos, no watermark, no UI chrome. This is a standalone background asset, not a screenshot of a website.",
+      "originalFile": "exec-99bfa84c-86e6-4994-a76b-df205aea46a8.png",
+      "output": "public/media/solutions/protect-recover/hero-v3.webp"
+    },
+    {
+      "slug": "cloud",
+      "prompt": "Use case: ads-marketing. Asset type: full-screen wide photographic website hero for Optimize IT, enterprise technology company. Hybrid cloud architecture: an expansive modern data infrastructure campus emerging through a soft sea of clouds at dawn, sleek glass architecture and precisely connected illuminated pathways, a striking airy view suggesting scalable connected infrastructure, not literal cloud-shaped logos. Style: exceptionally polished high-end editorial technology photography / photorealistic visualization, realistic materials, premium corporate not gaming, not sci-fi fantasy. Composition: landscape 16:9, dramatic subject concentrated on right two-thirds, left third calm dark navy negative space suitable for white HTML headline; image remains richly detailed and interesting across full frame. Palette: deep navy #071321, steel blue #48a7d8, restrained lime green #8bd45f highlights. Moody sophisticated lighting, deep dimensional contrast, no oversaturated glow. No text, no words, no logos, no watermark, no UI chrome. This is a standalone background asset, not a screenshot of a website.",
+      "originalFile": "exec-3d2d9414-e085-4dc2-be7b-8beaafa5122f.png",
+      "output": "public/media/solutions/cloud/hero-v3.webp"
+    },
+    {
+      "slug": "optinoc",
+      "prompt": "Use case: ads-marketing. Asset type: full-screen wide photographic website hero for Optimize IT, enterprise technology company. Intelligent network operations: a cinematic view of a sophisticated dark enterprise operations center, large panoramic screens of abstract telemetry and service topology, luminous blue connections with a few green signals, entirely illegible abstract data graphics, no invented readable product interface or metrics. Style: exceptionally polished high-end editorial technology photography / photorealistic visualization, realistic materials, premium corporate not gaming, not sci-fi fantasy. Composition: landscape 16:9, dramatic subject concentrated on right two-thirds, left third calm dark navy negative space suitable for white HTML headline; image remains richly detailed and interesting across full frame. Palette: deep navy #071321, steel blue #48a7d8, restrained lime green #8bd45f highlights. Moody sophisticated lighting, deep dimensional contrast, no oversaturated glow. No text, no words, no logos, no watermark, no UI chrome. This is a standalone background asset, not a screenshot of a website.",
+      "originalFile": "exec-3b165e42-f258-46cd-85f9-1c3edeac613a.png",
+      "output": "public/media/solutions/optinoc/hero-v3.webp"
+    },
+    {
+      "slug": "infrastructure",
+      "prompt": "Use case: ads-marketing. Asset type: full-screen wide photographic website hero for Optimize IT, enterprise technology company. Enterprise infrastructure: breathtaking low-angle wide photograph down an immaculate aisle of premium server racks in a modern data center, intricate real metal textures, server modules, structured cabling, tiny blue and green indicators, strong depth and architectural precision. Style: exceptionally polished high-end editorial technology photography / photorealistic visualization, realistic materials, premium corporate not gaming, not sci-fi fantasy. Composition: landscape 16:9, dramatic subject concentrated on right two-thirds, left third calm dark navy negative space suitable for white HTML headline; image remains richly detailed and interesting across full frame. Palette: deep navy #071321, steel blue #48a7d8, restrained lime green #8bd45f highlights. Moody sophisticated lighting, deep dimensional contrast, no oversaturated glow. No text, no words, no logos, no watermark, no UI chrome. This is a standalone background asset, not a screenshot of a website.",
+      "originalFile": "exec-1f1b9678-5216-4331-abe4-e9eb9b0fd0a0.png",
+      "output": "public/media/solutions/infrastructure/hero-v3.webp"
+    },
+    {
+      "slug": "itsm",
+      "prompt": "Use case: ads-marketing. Asset type: full-screen wide photographic website hero for Optimize IT, enterprise technology company. IT service management: premium realistic conceptual architectural scene of interconnected translucent glass workflow modules on a dark technology surface, clear organized paths converging into a central service hub, green light traveling through channels, refined enterprise process orchestration, no readable interfaces or icons. Style: exceptionally polished high-end editorial technology photography / photorealistic visualization, realistic materials, premium corporate not gaming, not sci-fi fantasy. Composition: landscape 16:9, dramatic subject concentrated on right two-thirds, left third calm dark navy negative space suitable for white HTML headline; image remains richly detailed and interesting across full frame. Palette: deep navy #071321, steel blue #48a7d8, restrained lime green #8bd45f highlights. Moody sophisticated lighting, deep dimensional contrast, no oversaturated glow. No text, no words, no logos, no watermark, no UI chrome. This is a standalone background asset, not a screenshot of a website.",
+      "originalFile": "exec-e37cb44c-94b3-440d-86a2-5799acf9a9df.png",
+      "output": "public/media/solutions/itsm/hero-v3.webp"
+    },
+    {
+      "slug": "managed-services",
+      "prompt": "Use case: ads-marketing. Asset type: full-screen wide photographic website hero for Optimize IT, enterprise technology company. Managed technology services: candid cinematic photograph of two experienced adult technical professionals working in a sophisticated enterprise operations center seen from behind and side, one woman and one man focused on real equipment and screens, no posed smiles, blue-lit servers behind, natural human presence and calm professional responsibility. Style: exceptionally polished high-end editorial technology photography / photorealistic visualization, realistic materials, premium corporate not gaming, not sci-fi fantasy. Composition: landscape 16:9, dramatic subject concentrated on right two-thirds, left third calm dark navy negative space suitable for white HTML headline; image remains richly detailed and interesting across full frame. Palette: deep navy #071321, steel blue #48a7d8, restrained lime green #8bd45f highlights. Moody sophisticated lighting, deep dimensional contrast, no oversaturated glow. No text, no words, no logos, no watermark, no UI chrome. This is a standalone background asset, not a screenshot of a website.",
+      "originalFile": "exec-daeb34a4-6b90-447e-9f7a-cf6e32563e52.png",
+      "output": "public/media/solutions/managed-services/hero-v3.webp"
+    }
+  ]
+}
