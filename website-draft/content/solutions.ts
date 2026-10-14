@@ -1,3 +1,4 @@
+import { getLanding } from "./landings";
 export type Media = {
   type: "image" | "video";
   src: string;
@@ -115,7 +116,7 @@ export const cases: SuccessCase[] = [
   },
 ];
 
-export const solutions: Solution[] = [
+const originalSolutions: Solution[] = [
   {
     slug: "protect-recover",
     name: "Optimize Protect & Recover",
@@ -514,6 +515,20 @@ export const solutions: Solution[] = [
   },
 ];
 
+export const solutions: Solution[] = originalSolutions.map((s) => {
+  const landing = getLanding(s.slug);
+  if (!landing) return s;
+  return {
+    ...s,
+    tagline: landing.headline,
+    description: landing.description,
+    problem: landing.challenge,
+    proposal: landing.intro.join(" "),
+    capabilities: landing.capabilities,
+    technologies: landing.technologies,
+    cta: "Solicitar asesoría gratuita",
+  };
+});
 export const corporateMetrics: Metric[] = [
   solutions[0].metrics[0],
   solutions[0].metrics[1],

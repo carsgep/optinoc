@@ -1,12 +1,13 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { site } from "@/content/site";
-import { solutions } from "@/content/solutions";
+import { landings } from "@/content/landings";
+import { AdvisoryForm } from "./AdvisoryForm";
 import { track } from "@/lib/analytics";
 export function ContactButton({
-  label = site.labels.ctaButton,
+  label = "Solicitar asesoría gratuita",
   location = "contact",
   secondary = false,
 }: {
@@ -14,37 +15,14 @@ export function ContactButton({
   location?: string;
   secondary?: boolean;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
   return (
-    <>
-      <button
-        className={`button ${secondary ? "secondary" : "primary"}`}
-        onClick={() => {
-          track("cta_click", { location, label });
-          dialog.current?.showModal();
-        }}
-      >
-        {label}
-      </button>
-      <dialog
-        ref={dialog}
-        className="contact-dialog"
-        aria-label={site.labels.contactDialogTitle}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) dialog.current?.close();
-        }}
-      >
-        <p className="eyebrow">{site.labels.draft}</p>
-        <h2>{site.labels.contactDialogTitle}</h2>
-        <p>{site.labels.contactDialogDescription}</p>
-        <button
-          className="button primary"
-          onClick={() => dialog.current?.close()}
-        >
-          {site.labels.contactClose}
-        </button>
-      </dialog>
-    </>
+    <a
+      href="#contacto"
+      className={`button ${secondary ? "secondary" : "primary"}`}
+      onClick={() => track("cta_click", { location, label })}
+    >
+      {label}
+    </a>
   );
 }
 export function Navigation() {
@@ -85,6 +63,25 @@ export function Navigation() {
               if (e.key === "Escape") setOpen(false);
             }}
           >
+            <details className="solutions-dropdown">
+              <summary>Servicios ▾</summary>
+              <div>
+                {landings.map((s) => (
+                  <Link
+                    key={s.slug}
+                    href={`/soluciones/${s.slug}/`}
+                    onClick={(event) => {
+                      setOpen(false);
+                      event.currentTarget
+                        .closest("details")
+                        ?.removeAttribute("open");
+                    }}
+                  >
+                    {s.shortName}
+                  </Link>
+                ))}
+              </div>
+            </details>
             {site.nav.map((n) => (
               <Link key={n.href} href={n.href} onClick={() => setOpen(false)}>
                 {n.label}
@@ -105,15 +102,7 @@ export function Navigation() {
   );
 }
 export function CTASection() {
-  return (
-    <section id="contacto" className="cta-section shell">
-      <p className="eyebrow">{site.name}</p>
-      <h2>{site.labels.ctaTitle}</h2>
-      <p>{site.labels.ctaDescription}</p>
-      <ContactButton />
-      <small>{site.labels.contactDraft}</small>
-    </section>
-  );
+  return <AdvisoryForm />;
 }
 export function Footer() {
   return (
@@ -130,7 +119,7 @@ export function Footer() {
           <p>{site.labels.footerTagline}</p>
         </div>
         <nav aria-label="Soluciones en el pie de página">
-          {solutions.map((s) => (
+          {landings.map((s) => (
             <Link key={s.slug} href={`/soluciones/${s.slug}/`}>
               {s.name}
             </Link>

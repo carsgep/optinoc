@@ -4,6 +4,7 @@ import { corporateMetrics, cases, technologies } from "@/content/solutions";
 import { SolutionsExperience } from "@/components/SolutionsExperience";
 import { ExperienceMetrics, SuccessCaseCard } from "@/components/Story";
 import { CTASection } from "@/components/SiteChrome";
+import { ServiceCards } from "@/components/ServiceCards";
 import { MediaBlock } from "@/components/MediaBlock";
 export const metadata: Metadata = {
   title: "Proteger, operar y transformar",
@@ -21,6 +22,16 @@ export default function Home() {
   return (
     <main id="contenido">
       <SolutionsExperience />
+      <section id="servicios" className="service-directory shell">
+        <p className="eyebrow">EL PORTAFOLIO COMPLETO</p>
+        <h2>Tecnología, procesos y especialistas para su operación.</h2>
+        <p className="directory-lead">
+          Explore nuestros servicios y soluciones de inteligencia artificial.
+          Encuentre el apoyo que necesita para proteger su información, mejorar
+          la atención y administrar su plataforma.
+        </p>
+        <ServiceCards />
+      </section>
       <section id="experiencia" className="experience-section">
         <div className="shell">
           <div className="section-heading">

@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-14",
+  "tool": "imagegen",
+  "assets": [
+    {
+      "slug": "optidesk",
+      "originalFile": "exec-a33009c4-1bbb-4d40-a9cc-29f9c1c0d3c0.png",
+      "prompt": "Use case: editorial enterprise website. Asset type: wide 16:9 landing-page hero photograph. Scene: An elegant enterprise service desk workspace, close view of a professional headset resting next to a luminous translucent conversational interface represented only by abstract geometric flowing blue light, a human support specialist softly blurred in right background. No robot. The sense of a helpful intelligent assistant integrated with real human service. Style: premium photorealistic technology editorial photography, sophisticated dark navy #071321, deep blue #102236 with restrained cyan #48a7d8 and lime #8bd45f accents. Composition: subject in right two thirds, dark uncluttered left third for HTML headline overlay, cinematic panoramic perspective. Lighting: realistic blue rim lighting and subtle green accents. Constraints: absolutely no text, numbers, logos, watermarks, brand marks, fake readable dashboards. No humanoid robots, stock padlock icon or cartoon shields. High realism, excellent material detail.",
+      "output": "public/media/solutions/optidesk/hero-v3.webp"
+    },
+    {
+      "slug": "backup-as-a-service",
+      "originalFile": "exec-bf39a40d-4760-4f4a-bee2-47550edf963e.png",
+      "prompt": "Use case: editorial enterprise website. Asset type: wide 16:9 landing-page hero photograph. Scene: A premium modern data protection facility, elegant server racks on the right with visually subtle luminous blue paths joining secure redundant storage nodes and distant cloud-shaped architectural lighting. Physically credible, sophisticated, resilience and managed backup without shield icons. Style: premium photorealistic technology editorial photography, sophisticated dark navy #071321, deep blue #102236 with restrained cyan #48a7d8 and lime #8bd45f accents. Composition: subject in right two thirds, dark uncluttered left third for HTML headline overlay, cinematic panoramic perspective. Lighting: realistic blue rim lighting and subtle green accents. Constraints: absolutely no text, numbers, logos, watermarks, brand marks, fake readable dashboards. No humanoid robots, stock padlock icon or cartoon shields. High realism, excellent material detail.",
+      "output": "public/media/solutions/backup-as-a-service/hero-v3.webp"
+    },
+    {
+      "slug": "cleanshield",
+      "originalFile": "exec-abce36f5-6b65-4e9a-8bf3-f4bf2656f42a.png",
+      "prompt": "Use case: editorial enterprise website. Asset type: wide 16:9 landing-page hero photograph. Scene: An isolated glass-walled data recovery laboratory with a protected server stack inside the glass chamber on the right, crisp precision engineered glass and metal, subtle green scan light and blue network paths outside the chamber suggesting isolation. No medical themes or biohazard imagery. Style: premium photorealistic technology editorial photography, sophisticated dark navy #071321, deep blue #102236 with restrained cyan #48a7d8 and lime #8bd45f accents. Composition: subject in right two thirds, dark uncluttered left third for HTML headline overlay, cinematic panoramic perspective. Lighting: realistic blue rim lighting and subtle green accents. Constraints: absolutely no text, numbers, logos, watermarks, brand marks, fake readable dashboards. No humanoid robots, stock padlock icon or cartoon shields. High realism, excellent material detail.",
+      "output": "public/media/solutions/cleanshield/hero-v3.webp"
+    }
+  ]
+}

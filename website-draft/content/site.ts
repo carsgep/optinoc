@@ -1,7 +1,7 @@
 import type { Media } from "./solutions";
 export const site = {
   name: "Optimize IT",
-  origin: "https://www.optimizeit.co",
+  origin: "https://optimizeit-home-borrador.optimize-it-0119.chatgpt.site",
   draft: true,
   title: "Tecnología para proteger, operar y transformar tu negocio.",
   description:
@@ -23,7 +23,7 @@ export const site = {
   heroFooter: ["PROTECT · OPERATE · TRANSFORM", "Optimize IT / Colombia"],
   privacyUrl: "https://optimizeit.co/politica-de-privacidad/",
   nav: [
-    { label: "Soluciones", href: "/home-v2/#soluciones" },
+    { label: "Inicio", href: "/home-v2/" },
     { label: "Experiencia", href: "/home-v2/#experiencia" },
     { label: "Casos de éxito", href: "/home-v2/#casos" },
     { label: "Nosotros", href: "/home-v2/#nosotros" },
@@ -33,7 +33,7 @@ export const site = {
     lines: ["Proteger.", "Operar.", "Transformar."],
     lead: "Tu negocio necesita avanzar. Tu tecnología también.",
     primary: "Conoce nuestras soluciones",
-    secondary: "Hablemos de tu proyecto",
+    secondary: "Solicitar asesoría gratuita",
     diagramTitle: "CONTINUIDAD DEL NEGOCIO",
     diagramCore: "Tu negocio",
     diagramNodes: [
@@ -44,7 +44,7 @@ export const site = {
     diagramCaption: "Estrategia, implementación y operación conectadas.",
   },
   labels: {
-    draft: "Borrador privado · Sin publicar",
+    draft: "Vista previa · Web en desarrollo",
     home: "Inicio",
     contact: "Contacto",
     menu: "Menú",
@@ -91,7 +91,7 @@ export const site = {
       "Integramos tecnologías empresariales según las necesidades de cada arquitectura.",
     aboutTitle: "Siempre hay una mejor forma de hacer las cosas.",
     aboutDescription:
-      "En Optimize IT combinamos infraestructura, nube, automatización e inteligencia operacional con experiencia en entornos empresariales y financieros.",
+      "Combinamos tecnología, procesos y especialistas para proteger la información y mantener operativas las plataformas de las que depende su negocio. Más de 15 años de experiencia atendiendo las exigencias del sector financiero, aplicada a empresas cuya operación necesita continuidad.",
     ctaTitle: "¿Qué necesita resolver hoy tu negocio?",
     ctaDescription:
       "Empecemos por tu reto. Definamos una ruta tecnológica que tenga sentido para tu operación.",
