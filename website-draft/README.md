@@ -54,3 +54,8 @@ No copiar `out/` a la raíz del hosting corporativo sin revisar destino y rutas.
 Las nueve landings incorporan el contenido publicable de `Optimize_IT_Landings_Propuesta_V2.pdf`: titulares descriptivos, subtítulos, beneficios, alcance, procesos de cuatro pasos, tres FAQ por página y CTA contextual. Se conservan las rutas actuales. Los campos SEO están en `content/landing-copy.json`; la procedencia editorial se registra en `content/editorial-source-v2.json`.
 
 Backup as a Service y CleanShield son soluciones hijas de Protect and Recover: se muestran en un bloque destacado dentro de esta landing y bajo su grupo en el menú y footer. El directorio del HOME muestra siete entradas principales; las dos páginas hijas siguen disponibles mediante Protect and Recover. Las notas internas del PDF no se publican.
+## Preparación para cPanel y contactos
+
+El modo corporativo se genera con `NEXT_PUBLIC_PRODUCTION_SITE=true`, `NEXT_PUBLIC_SITE_ORIGIN=https://optimizeit.co` y `NEXT_PUBLIC_CONTACT_ENDPOINT=/api/contact.php`. Después del build, `node scripts/prepare-cpanel.cjs` añade el endpoint PHP a la exportación. Los valores predeterminados siguen generando el borrador sin envío de datos.
+
+`hosting/` incluye el endpoint PHP, el esquema MySQL y la guía de instalación. El formulario corporativo usa token de sesión, consentimiento, validación y control de solicitudes; solo confirma recepción después de una inserción completada o de comprobar una solicitud ya registrada. La configuración de MySQL se instala fuera del document root. El almacenamiento real y la publicación en optimizeit.co están pendientes de verificar mediante acceso al hosting; no se ha modificado el sitio actual.

@@ -1,8 +1,10 @@
 import type { Media } from "./solutions";
 export const site = {
   name: "Optimize IT",
-  origin: "https://optimizeit-home-borrador.optimize-it-0119.chatgpt.site",
-  draft: true,
+  origin:
+    process.env.NEXT_PUBLIC_SITE_ORIGIN ??
+    "https://optimizeit-home-borrador.optimize-it-0119.chatgpt.site",
+  draft: process.env.NEXT_PUBLIC_PRODUCTION_SITE !== "true",
   title: "Tecnología para proteger, operar y transformar tu negocio.",
   description:
     "Infraestructura, nube, automatización y servicios especializados para mantener tu tecnología disponible, protegida y preparada para evolucionar.",

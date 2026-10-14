@@ -115,7 +115,7 @@ export function Navigation() {
           </div>
         </div>
       </header>
-      <div className="draft-label">{site.labels.draft}</div>
+      {site.draft && <div className="draft-label">{site.labels.draft}</div>}
     </>
   );
 }
@@ -173,7 +173,7 @@ export function Footer() {
       </div>
       <div className="footer-bottom">
         <span>{site.legal}</span>
-        <span>{site.labels.draft}</span>
+        {site.draft && <span>{site.labels.draft}</span>}
       </div>
     </footer>
   );

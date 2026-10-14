@@ -5,3 +5,7 @@ out/
 next-env.d.ts
 qa-artifacts/
 *.log
+
+hosting/contact-config.php
+.deploy/
+.env*

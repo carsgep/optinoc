@@ -838,3 +838,24 @@
     padding-top: 60px;
   }
 }
+
+.contact-honeypot {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  pointer-events: none;
+}
+.advisory-form .contact-consent {
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+.advisory-form .contact-consent input {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin: 0 10px 0 0;
+  vertical-align: middle;
+  accent-color: var(--color-lime);
+}
