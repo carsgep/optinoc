@@ -49,3 +49,8 @@ Es una versión completa para revisar el diseño y el recorrido del sitio. El fo
 `site.draft` mantiene noindex y nofollow. El enlace de revisión tiene acceso público; noindex no es un control de acceso. Casos, métricas, certificaciones, permisos de logos, cobertura y SLA deben concretarse antes del lanzamiento corporativo. Las cifras antiguas del HOME conservan su nota de contexto; no son garantías de servicio.
 
 No copiar `out/` a la raíz del hosting corporativo sin revisar destino y rutas. Sites aloja una copia separada; no hay conexión a cPanel ni credenciales de la web actual en este frontend.
+## Actualización editorial V2
+
+Las nueve landings incorporan el contenido publicable de `Optimize_IT_Landings_Propuesta_V2.pdf`: titulares descriptivos, subtítulos, beneficios, alcance, procesos de cuatro pasos, tres FAQ por página y CTA contextual. Se conservan las rutas actuales. Los campos SEO están en `content/landing-copy.json`; la procedencia editorial se registra en `content/editorial-source-v2.json`.
+
+Backup as a Service y CleanShield son soluciones hijas de Protect and Recover: se muestran en un bloque destacado dentro de esta landing y bajo su grupo en el menú y footer. El directorio del HOME muestra siete entradas principales; las dos páginas hijas siguen disponibles mediante Protect and Recover. Las notas internas del PDF no se publican.

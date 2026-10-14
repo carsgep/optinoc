@@ -74,7 +74,7 @@ export const landingExtras: Record<
     category: "IA PROPIETARIA DE OPTIMIZE IT",
     shortName: "OptiNOC",
     image: "optinoc",
-    related: ["managed-services", "optidesk"],
+    related: ["managed-services", "itsm"],
     technologies: ["Nagios", "IBM Instana", "OPTI · Asistente de OptiNOC"],
   },
   optidesk: {
@@ -114,6 +114,9 @@ export const landings = copy.map((item) => {
   return {
     ...item,
     ...extra,
+    parentSlug: ["backup-as-a-service", "cleanshield"].includes(item.slug)
+      ? "protect-recover"
+      : undefined,
     heroSrc:
       item.slug === "cleanshield"
         ? "/media/solutions/cleanshield/hero-v4.webp"
@@ -132,3 +135,5 @@ export type Landing = (typeof landings)[number];
 export function getLanding(slug: string) {
   return landings.find((item) => item.slug === slug);
 }
+
+export const primaryLandings = landings.filter((s) => !s.parentSlug);

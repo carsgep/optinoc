@@ -15,8 +15,8 @@ export async function generateMetadata({
   const s = getLanding(slug);
   if (!s) return {};
   return {
-    title: s.shortName,
-    description: s.description,
+    title: { absolute: s.seoTitle },
+    description: s.metaDescription,
     alternates: { canonical: `/soluciones/${slug}/` },
     openGraph: {
       type: "website",

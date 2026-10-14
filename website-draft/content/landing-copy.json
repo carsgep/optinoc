@@ -2,211 +2,322 @@
   {
     "slug": "protect-recover",
     "name": "Optimize Protect and Recover",
-    "headline": "Su información debe estar protegida. Su recuperación debe estar preparada.",
-    "description": "Respaldo, recuperación ante desastres y ciberresiliencia para la información de la que depende su negocio.",
+    "headline": "Respaldo y recuperación de datos para mantener su operación",
+    "description": "Su información debe estar protegida. Su recuperación debe estar preparada.",
     "intro": [
-      "Una falla de hardware, un error humano o un ataque pueden dejar a su empresa sin los datos que necesita para operar. En Optimize IT evaluamos su protección actual y diseñamos soluciones que combinan herramientas, procedimientos y especialistas para respaldar y recuperar su información."
+      "En Optimize IT diseñamos, implementamos y acompañamos estrategias de protección de datos que combinan tecnología, procedimientos y especialistas. Le ayudamos a entender qué está respaldando, qué podría recuperar y cómo prepararse frente a fallas, errores humanos o incidentes de ciberseguridad."
     ],
-    "challenge": "Si ha perdido información, no ha probado sus restauraciones o no sabe cuánto tardaría en recuperar sus servicios críticos, es momento de revisar su estrategia. También podemos acompañarlo antes de que ocurra un incidente.",
-    "capabilityTitle": "Cómo lo ayudamos",
+    "challenge": "Los respaldos se ejecutan, pero no existen pruebas suficientes de restauración. No están claras las prioridades ni las dependencias para recuperar aplicaciones críticas. La estrategia actual puede ser insuficiente frente a fallas, ransomware o crecimiento de datos.",
+    "capabilityTitle": "Qué incluye nuestra propuesta",
     "capabilities": [
       {
-        "title": "Evaluación de respaldos",
-        "description": "revisamos la operación actual, las fallas y las brechas que pueden comprometer una recuperación."
+        "title": "Evaluación de protección",
+        "description": "Revisamos plataformas, políticas, tareas fallidas, retención y criterios de recuperación para identificar oportunidades de mejora."
       },
       {
-        "title": "Implementación y soporte",
-        "description": "configuramos y acompañamos plataformas de respaldo y recuperación según sus cargas de trabajo."
+        "title": "Diseño e implementación",
+        "description": "Configuramos soluciones de respaldo, copias protegidas y mecanismos de recuperación conforme a las cargas y compatibilidades del proyecto."
       },
       {
-        "title": "Preparación de recuperación",
-        "description": "definimos prioridades y procedimientos, y acordamos pruebas para comprobar la recuperación."
+        "title": "Preparación y pruebas",
+        "description": "Definimos prioridades, procedimientos y escenarios de prueba acordados para obtener evidencia de restauración."
       },
       {
-        "title": "Ciberresiliencia",
-        "description": "incorporamos copias protegidas, aislamiento y validación de recuperación según la arquitectura seleccionada."
+        "title": "Soporte y administración",
+        "description": "Acompañamos la operación de las plataformas o estructuramos un modelo de servicio administrado según el alcance contratado."
       }
     ],
     "sections": [
       {
-        "title": "Tecnologías que podemos integrar",
+        "title": "Por qué Optimize IT",
         "paragraphs": [
-          "IBM Storage Defender Data Protect, Veeam Backup & Replication, IBM Storage Protect, Predatar, IBM Safeguarded Copy e IBM Storage Defender Sentinel, según compatibilidad y alcance."
+          "Con más de 15 años de experiencia acompañando organizaciones del sector financiero, combinamos la implementación tecnológica con procedimientos de operación y recuperación. La elección de herramientas responde a las necesidades de cada entorno."
         ],
         "bullets": []
       },
       {
-        "title": "Elija el modelo que necesita",
+        "title": "Tecnologías y compatibilidad",
         "paragraphs": [
-          "Podemos prestar consultoría, implementación, soporte o administración. Si necesita la solución completa por una mensualidad, conozca Backup as a Service. Para validar y tratar respaldos en entornos aislados, conozca CleanShield."
+          "IBM Storage Defender Data Protect, IBM Storage Protect, IBM Safeguarded Copy, IBM Storage Defender Sentinel, Veeam Backup & Replication y Predatar, cuando sean compatibles y formen parte del diseño."
         ],
         "bullets": []
       }
     ],
     "faqs": [
       {
-        "question": "¿Un respaldo exitoso asegura que podré recuperarme?",
-        "answer": "Es necesario comprobar la restauración y revisar dependencias, tiempos y condiciones de recuperación."
+        "question": "¿Un respaldo exitoso significa que puedo recuperarme?",
+        "answer": "No necesariamente. La restauración debe comprobarse teniendo en cuenta datos, aplicaciones, dependencias y condiciones de recuperación."
       },
       {
-        "question": "¿Pueden trabajar sobre mi plataforma actual?",
-        "answer": "Evaluamos su entorno y definimos qué conservar, mejorar o incorporar."
+        "question": "¿Pueden mejorar mi plataforma sin reemplazarla?",
+        "answer": "Sí. Primero evaluamos su entorno y definimos qué conservar, ajustar o incorporar."
+      },
+      {
+        "question": "¿Qué diferencia hay entre respaldo y ciberresiliencia?",
+        "answer": "El respaldo conserva copias; una estrategia de ciberresiliencia también contempla protección frente a alteraciones, validación y preparación de la recuperación."
       }
     ],
-    "closing": "Conozca qué tan preparada está su empresa para recuperar la información que necesita."
+    "closing": "Conozca qué tan preparada está su organización para recuperar la información de la que depende.",
+    "subtitle": "Su información debe estar protegida. Su recuperación debe estar preparada.",
+    "cta": "Evaluar mi estrategia de respaldo y recuperación",
+    "secondaryCta": "Conocer las alternativas de protección",
+    "challenges": [
+      "Los respaldos se ejecutan, pero no existen pruebas suficientes de restauración.",
+      "No están claras las prioridades ni las dependencias para recuperar aplicaciones críticas.",
+      "La estrategia actual puede ser insuficiente frente a fallas, ransomware o crecimiento de datos."
+    ],
+    "benefits": [
+      "Conocer el estado de protección de las cargas incluidas y las brechas que requieren atención.",
+      "Contar con procedimientos, responsables y criterios de recuperación definidos.",
+      "Disponer de una arquitectura de respaldo y recuperación coherente con sus objetivos de negocio."
+    ],
+    "process": [
+      {
+        "title": "Entender",
+        "text": "Identificamos cargas, dependencias y objetivos de recuperación."
+      },
+      {
+        "title": "Diseñar",
+        "text": "Seleccionamos arquitectura, herramientas y medidas de protección."
+      },
+      {
+        "title": "Implementar",
+        "text": "Configuramos la solución y documentamos los procedimientos."
+      },
+      {
+        "title": "Validar",
+        "text": "Acordamos pruebas y acciones de mejora a partir de los resultados."
+      }
+    ],
+    "seoTitle": "Respaldo, recuperación y ciberresiliencia | Optimize IT",
+    "metaDescription": "Proteja la información de su empresa con soluciones de respaldo, recuperación ante desastres y ciberresiliencia adaptadas a sus cargas críticas."
   },
   {
     "slug": "cloud",
     "name": "Optimize Cloud",
-    "headline": "Migre y opere sus cargas en la nube con una estrategia clara.",
-    "description": "Consultoría, arquitectura, migración y administración de ambientes en AWS, Microsoft Azure e IBM Cloud.",
+    "headline": "Consultoría, migración y operación cloud con una estrategia clara",
+    "description": "La nube debe responder a sus aplicaciones, no al revés.",
     "intro": [
-      "Cuando su infraestructura local es costosa, inestable o difícil de mantener, la nube puede ofrecer una alternativa. En Optimize IT lo ayudamos a evaluar sus cargas, seleccionar una arquitectura y planificar la migración con criterios de rendimiento, protección y operación."
+      "Lo acompañamos desde la evaluación de sus cargas hasta la puesta en operación de arquitecturas en AWS, Microsoft Azure e IBM Cloud. Tomamos decisiones considerando dependencias, rendimiento, seguridad, continuidad y capacidad real de administración."
     ],
-    "challenge": "Si está evaluando mover aplicaciones a la nube, necesita reemplazar infraestructura o requiere especialistas para administrar un ambiente cloud existente, podemos acompañarlo desde la decisión hasta la operación.",
-    "capabilityTitle": "Cómo lo ayudamos",
+    "challenge": "Necesita modernizar infraestructura, pero no sabe qué aplicaciones conviene migrar. Sus ambientes cloud presentan dificultades de administración, visibilidad o costos. Una migración requiere coordinar dependencias técnicas y continuidad del servicio.",
+    "capabilityTitle": "Qué incluye nuestra propuesta",
     "capabilities": [
       {
-        "title": "Evaluación y planificación",
-        "description": "identificamos cargas, dependencias y requisitos para definir una ruta de migración."
+        "title": "Assessment de cargas",
+        "description": "Identificamos aplicaciones, dependencias, riesgos, restricciones y requisitos para recomendar un destino técnico apropiado."
       },
       {
         "title": "Arquitectura y despliegue",
-        "description": "diseñamos e implementamos el ambiente según las necesidades técnicas y del negocio."
+        "description": "Diseñamos ambientes, conectividad y servicios relevantes de acuerdo con la arquitectura acordada."
       },
       {
-        "title": "Migración de cargas",
-        "description": "organizamos actividades, validaciones y transición para poner en operación el nuevo entorno."
+        "title": "Migración y transición",
+        "description": "Planificamos actividades, ventanas, validaciones y criterios para poner las cargas en operación."
       },
       {
         "title": "Administración y protección",
-        "description": "ofrecemos gestión especializada e integramos el respaldo dentro del alcance acordado."
+        "description": "Podemos integrar gestión especializada, respaldo y seguimiento operativo mediante servicios complementarios."
       }
     ],
     "sections": [
       {
-        "title": "Una decisión basada en su operación",
+        "title": "Por qué Optimize IT",
         "paragraphs": [
-          "Comparamos necesidades de capacidad, continuidad y costos. La elección de nube debe responder a sus aplicaciones y a la capacidad de administrarla. No todas las cargas requieren el mismo destino ni el mismo modelo de servicio."
+          "Nuestro enfoque une arquitectura e implementación con conocimiento de operación de plataformas empresariales. No proponemos mover todas las cargas por defecto: evaluamos cuándo conviene nube, infraestructura local o un escenario híbrido."
         ],
         "bullets": []
       },
       {
-        "title": "Forma de trabajo",
+        "title": "Tecnologías y compatibilidad",
         "paragraphs": [
-          "Revisamos su situación actual, definimos el alcance y construimos un plan de implementación. Si requiere administración posterior, acordamos responsabilidades y niveles de servicio mediante Managed Services."
+          "Amazon Web Services (AWS), Microsoft Azure e IBM Cloud. Las herramientas concretas dependen del proyecto; los servicios administrados y de protección se contratan según alcance."
         ],
         "bullets": []
       }
     ],
     "faqs": [
       {
-        "question": "¿Debo migrar toda mi infraestructura?",
-        "answer": "La evaluación permite decidir qué cargas mover y cuáles conviene mantener en su entorno actual."
+        "question": "¿Es necesario migrar toda mi infraestructura?",
+        "answer": "No. La evaluación ayuda a decidir qué migrar, qué modernizar y qué mantener en su entorno actual."
       },
       {
         "question": "¿La nube siempre reduce costos?",
-        "answer": "Depende de la arquitectura, el consumo y la operación. La asesoría permite revisar esos factores antes de decidir."
+        "answer": "No necesariamente. El resultado depende del diseño, consumo, licencias y forma de operar el ambiente."
+      },
+      {
+        "question": "¿Pueden administrar la nube después de migrar?",
+        "answer": "Sí, cuando se contrate el alcance correspondiente, con responsabilidades y niveles de servicio definidos."
       }
     ],
-    "closing": "Cuéntenos qué carga necesita migrar o qué dificultad enfrenta en su nube actual."
+    "closing": "Cuéntenos qué plataforma desea migrar o qué dificultad necesita resolver en su nube actual.",
+    "subtitle": "La nube debe responder a sus aplicaciones, no al revés.",
+    "cta": "Solicitar asesoría de migración cloud",
+    "secondaryCta": "Explorar nuestros servicios cloud",
+    "challenges": [
+      "Necesita modernizar infraestructura, pero no sabe qué aplicaciones conviene migrar.",
+      "Sus ambientes cloud presentan dificultades de administración, visibilidad o costos.",
+      "Una migración requiere coordinar dependencias técnicas y continuidad del servicio."
+    ],
+    "benefits": [
+      "Una ruta de modernización priorizada según criticidad, dependencias y esfuerzo.",
+      "Arquitecturas dimensionadas para las cargas y sus requisitos operativos.",
+      "Mayor claridad sobre las responsabilidades de implementación y administración posterior."
+    ],
+    "process": [
+      {
+        "title": "Evaluar",
+        "text": "Reconocemos el estado actual, las cargas y el caso de negocio."
+      },
+      {
+        "title": "Planificar",
+        "text": "Definimos arquitectura, responsables y ruta de migración."
+      },
+      {
+        "title": "Migrar",
+        "text": "Ejecutamos la transición conforme a un plan y criterios de aceptación."
+      },
+      {
+        "title": "Operar",
+        "text": "Acordamos gestión, soporte y seguimiento cuando se requiere."
+      }
+    ],
+    "seoTitle": "Migración y administración cloud | Optimize IT",
+    "metaDescription": "Evalúe, migre y administre sus cargas en AWS, Azure o IBM Cloud con arquitectura, protección y operación alineadas con las necesidades de su empresa."
   },
   {
     "slug": "infrastructure",
     "name": "Optimize Infrastructure",
-    "headline": "Infraestructura preparada para sus cargas críticas y su crecimiento.",
-    "description": "Dimensionamiento e implementación de servidores, almacenamiento y plataformas empresariales.",
+    "headline": "Infraestructura empresarial diseñada para sus cargas críticas",
+    "description": "Dimensionar bien hoy facilita operar y crecer mañana.",
     "intro": [
-      "El crecimiento de sus datos y aplicaciones exige una infraestructura adecuada. En Optimize IT evaluamos sus requerimientos y lo acompañamos en la selección, dimensionamiento e implementación de soluciones para modernizar su plataforma y ampliar su capacidad."
+      "En Optimize IT evaluamos las necesidades de procesamiento, almacenamiento, disponibilidad y crecimiento de su organización. Diseñamos e implementamos plataformas empresariales para que la inversión tecnológica responda a las cargas que realmente debe soportar."
     ],
-    "challenge": "Si sus servidores o su almacenamiento se quedan cortos, necesita renovar una plataforma o está preparando nuevas cargas, lo ayudamos a definir una solución alineada con la operación.",
-    "capabilityTitle": "Cómo lo ayudamos",
+    "challenge": "El crecimiento de datos y aplicaciones supera la capacidad disponible. Necesita renovar equipos o ampliar plataformas con restricciones de compatibilidad. Requiere justificar una inversión con criterios técnicos y operativos claros.",
+    "capabilityTitle": "Qué incluye nuestra propuesta",
     "capabilities": [
       {
         "title": "Servidores empresariales",
-        "description": "dimensionamos plataformas IBM Power y servidores de fabricantes como Dell, HPE y Lenovo, según la carga de trabajo."
+        "description": "Dimensionamiento e implementación de IBM Power y plataformas de fabricantes como Dell, HPE y Lenovo, según requerimientos."
       },
       {
         "title": "Almacenamiento",
-        "description": "diseñamos soluciones de capacidad y desempeño con tecnologías como IBM Storage FlashSystem e IBM Storage Scale."
+        "description": "Diseño de soluciones con tecnologías como IBM Storage FlashSystem e IBM Storage Scale para cargas compatibles."
       },
       {
-        "title": "Visibilidad del almacenamiento",
-        "description": "incorporamos IBM Spectrum Control para supervisar capacidad, rendimiento y salud de los sistemas compatibles."
+        "title": "Gestión de capacidad",
+        "description": "Visibilidad y seguimiento del almacenamiento mediante herramientas como IBM Spectrum Control cuando aplique."
       },
       {
-        "title": "Implementación y acompañamiento",
-        "description": "prestamos consultoría, instalación, configuración y soporte de acuerdo con el proyecto contratado."
+        "title": "Instalación y acompañamiento",
+        "description": "Configuración, pruebas, documentación, soporte e integración con el entorno existente, conforme al contrato."
       }
     ],
     "sections": [
       {
-        "title": "Dimensionar antes de comprar",
+        "title": "Por qué Optimize IT",
         "paragraphs": [
-          "Revisamos aplicaciones, capacidad actual, crecimiento esperado y requisitos de disponibilidad. La propuesta se construye a partir de sus necesidades; no parte de una lista de equipos."
+          "Nuestra experiencia en plataformas empresariales y almacenamiento permite evaluar alternativas antes de seleccionar fabricantes o modelos. La arquitectura debe tener sentido técnico y operativo, no comenzar por un catálogo de equipos."
         ],
         "bullets": []
       },
       {
-        "title": "Tecnología y operación",
+        "title": "Tecnologías y compatibilidad",
         "paragraphs": [
-          "Contamos con experiencia en plataformas IBM y ambientes empresariales. También apoyamos soluciones para protección de datos con fabricantes como ExaGrid y Cohesity. Cada tecnología se selecciona para cumplir una función concreta dentro de la arquitectura."
+          "IBM Power, IBM Storage FlashSystem, IBM Storage Scale, IBM Spectrum Control y plataformas empresariales de fabricantes seleccionados. Otras soluciones de protección pueden integrarse en proyectos específicos."
         ],
         "bullets": []
       }
     ],
     "faqs": [
       {
-        "question": "¿Pueden ampliar mi infraestructura existente?",
-        "answer": "Revisamos la plataforma y sus restricciones para definir si conviene ampliar, renovar o migrar."
+        "question": "¿Pueden ampliar mi plataforma existente?",
+        "answer": "Evaluamos los límites y compatibilidades para recomendar ampliación, renovación o migración."
       },
       {
-        "question": "¿También pueden administrarla?",
-        "answer": "Sí. La administración especializada se puede contratar a través de Managed Services."
+        "question": "¿También suministran e implementan tecnología?",
+        "answer": "Podemos estructurar propuestas con los componentes de tecnología e implementación que se acuerden."
+      },
+      {
+        "question": "¿Pueden administrar la plataforma una vez instalada?",
+        "answer": "Sí. La administración especializada puede contratarse a través de Managed Services."
       }
     ],
-    "closing": "Defina la infraestructura que necesita antes de realizar su próxima inversión."
+    "closing": "Antes de su próxima inversión, evaluemos qué infraestructura necesita realmente.",
+    "subtitle": "Dimensionar bien hoy facilita operar y crecer mañana.",
+    "cta": "Dimensionar mi infraestructura",
+    "secondaryCta": "Conocer capacidades de infraestructura",
+    "challenges": [
+      "El crecimiento de datos y aplicaciones supera la capacidad disponible.",
+      "Necesita renovar equipos o ampliar plataformas con restricciones de compatibilidad.",
+      "Requiere justificar una inversión con criterios técnicos y operativos claros."
+    ],
+    "benefits": [
+      "Mejor correspondencia entre capacidad, desempeño y requisitos de las aplicaciones.",
+      "Una recomendación tecnológica fundamentada en necesidades y crecimiento previsto.",
+      "Mayor claridad sobre implementación, integración y administración posterior."
+    ],
+    "process": [
+      {
+        "title": "Relevar",
+        "text": "Analizamos cargas, crecimiento, dependencias y limitaciones."
+      },
+      {
+        "title": "Dimensionar",
+        "text": "Determinamos capacidad, desempeño y disponibilidad esperados."
+      },
+      {
+        "title": "Implementar",
+        "text": "Integramos y configuramos la plataforma seleccionada."
+      },
+      {
+        "title": "Acompañar",
+        "text": "Definimos soporte o administración según la necesidad."
+      }
+    ],
+    "seoTitle": "Infraestructura y almacenamiento empresarial | Optimize IT",
+    "metaDescription": "Diseño, dimensionamiento e implementación de servidores y almacenamiento empresarial para cargas críticas, crecimiento y modernización de TI."
   },
   {
     "slug": "managed-services",
     "name": "Optimize IT Managed Services",
-    "headline": "Especialistas para administrar la tecnología de la que depende su negocio.",
-    "description": "Administración de sistemas operativos, bases de datos, plataformas de respaldo y ambientes cloud bajo acuerdos de servicio.",
+    "headline": "Servicios administrados de TI para estabilizar su operación",
+    "description": "La tecnología crítica necesita conocimiento y continuidad operativa.",
     "intro": [
-      "La rotación de personal y la falta de conocimiento especializado pueden afectar la estabilidad de sus servicios. En Optimize IT aportamos profesionales y procedimientos para administrar las plataformas que su empresa ya tiene y apoyar a su equipo interno."
+      "Complementamos a su equipo de TI con especialistas y procedimientos para administrar plataformas empresariales. Organizamos responsabilidades, tareas, escalamiento y seguimiento de acuerdo con el alcance contratado y los objetivos de su organización."
     ],
-    "challenge": "Si su equipo está sobrecargado, necesita cubrir conocimiento especializado o ha incorporado una tecnología que aún no puede administrar, podemos definir un servicio acorde con su operación.",
-    "capabilityTitle": "Qué podemos administrar",
+    "challenge": "Su equipo interno no alcanza a cubrir todas las tecnologías que debe operar. La rotación o ausencia de personal afecta la continuidad del conocimiento. Necesita mayor trazabilidad de tareas, incidentes y responsabilidades.",
+    "capabilityTitle": "Qué incluye nuestra propuesta",
     "capabilities": [
       {
         "title": "Sistemas operativos",
-        "description": "Sistemas operativos como AIX, Linux y Windows, según versiones y alcance acordado."
+        "description": "Administración de ambientes AIX, Linux y Windows Server según versiones, compatibilidad y responsabilidades acordadas."
       },
       {
         "title": "Bases de datos y aplicaciones",
-        "description": "Bases de datos y aplicaciones empresariales, incluyendo Oracle Database y plataformas IBM conforme al entorno contratado."
+        "description": "Gestión especializada de plataformas como Oracle Database y tecnologías IBM incluidas en el alcance."
       },
       {
         "title": "Plataformas de respaldo",
-        "description": "Herramientas de respaldo como Veeam Backup & Replication, IBM Storage Protect e IBM Storage Defender Data Protect."
+        "description": "Operación de entornos Veeam Backup & Replication, IBM Storage Protect y IBM Storage Defender Data Protect, cuando aplique."
       },
       {
-        "title": "Cloud y virtualización",
-        "description": "Ambientes en AWS, Microsoft Azure e IBM Cloud, y plataformas como IBM Fusion HCI cuando formen parte del servicio."
+        "title": "Nube y plataformas",
+        "description": "Administración de ambientes AWS, Azure e IBM Cloud y soluciones como IBM Fusion HCI según contratación."
       }
     ],
     "sections": [
       {
-        "title": "Cómo organizamos la operación",
+        "title": "Por qué Optimize IT",
         "paragraphs": [
-          "Definimos responsabilidades, procedimientos, cobertura y acuerdos de nivel de servicio o SLA. Asignamos especialistas, documentamos actividades y realizamos seguimiento de la operación dentro del alcance contratado."
+          "En Managed Services, por regla general la plataforma pertenece al cliente y Optimize IT aporta la gestión especializada. Si también necesita contratar la solución de respaldo completa, puede evaluar Backup as a Service. OptiNOC puede complementar la visibilidad y el escalamiento cuando se incluya."
         ],
         "bullets": []
       },
       {
-        "title": "Su plataforma con respaldo especializado",
+        "title": "Tecnologías y compatibilidad",
         "paragraphs": [
-          "En Managed Services, las herramientas y la infraestructura pertenecen al cliente. Optimize IT aporta el equipo y la gestión para administrarlas. Si necesita adquirir también la tecnología de respaldo, conozca Backup as a Service."
+          "AIX, Linux, Windows Server, Oracle Database, IBM Fusion HCI, IBM Storage Protect, IBM Storage Defender Data Protect, Veeam Backup & Replication, AWS, Microsoft Azure e IBM Cloud, conforme al servicio."
         ],
         "bullets": []
       }
@@ -214,293 +325,515 @@
     "faqs": [
       {
         "question": "¿Reemplaza a mi equipo de TI?",
-        "answer": "El servicio puede complementar su equipo y cubrir funciones que requieran especialistas."
+        "answer": "Puede complementarlo, asumir funciones específicas o apoyar tecnologías que requieran conocimiento especializado."
       },
       {
-        "question": "¿Incluye monitoreo con OptiNOC?",
-        "answer": "Puede integrarse cuando se acuerde como parte de la solución; se define en el alcance."
+        "question": "¿El servicio incluye monitoreo con OptiNOC?",
+        "answer": "Puede integrarse como parte de una propuesta; se especifica en el alcance."
+      },
+      {
+        "question": "¿La cobertura es 24/7?",
+        "answer": "Los horarios, disponibilidad y SLA se definen en cada contrato. No existe una cobertura universal para todos los servicios."
       }
     ],
-    "closing": "Cuéntenos qué plataforma necesita administrar y qué dificultades enfrenta hoy."
+    "closing": "Cuéntenos qué plataforma necesita administrar y qué dificultad enfrenta hoy su equipo.",
+    "subtitle": "La tecnología crítica necesita conocimiento y continuidad operativa.",
+    "cta": "Solicitar un servicio administrado",
+    "secondaryCta": "Ver plataformas que administramos",
+    "challenges": [
+      "Su equipo interno no alcanza a cubrir todas las tecnologías que debe operar.",
+      "La rotación o ausencia de personal afecta la continuidad del conocimiento.",
+      "Necesita mayor trazabilidad de tareas, incidentes y responsabilidades."
+    ],
+    "benefits": [
+      "Acceso a conocimiento especializado para las plataformas incluidas en el servicio.",
+      "Operación apoyada por procedimientos, documentación y acuerdos claros.",
+      "Mejor visibilidad de las actividades y de las oportunidades de mejora."
+    ],
+    "process": [
+      {
+        "title": "Delimitar",
+        "text": "Identificamos plataformas, criticidad, responsables y horarios requeridos."
+      },
+      {
+        "title": "Transferir",
+        "text": "Realizamos levantamiento de conocimiento y procedimientos acordados."
+      },
+      {
+        "title": "Operar",
+        "text": "Ejecutamos actividades, gestionamos incidencias y documentamos resultados."
+      },
+      {
+        "title": "Mejorar",
+        "text": "Revisamos hallazgos, prioridades y ajustes de la operación."
+      }
+    ],
+    "seoTitle": "Servicios administrados de TI | Optimize IT",
+    "metaDescription": "Especialistas para administrar sistemas operativos, bases de datos, respaldo y nube bajo procedimientos, responsabilidades y acuerdos de servicio."
   },
   {
     "slug": "itsm",
     "name": "Optimize ITSM",
-    "headline": "Mejore la atención de TI con procesos claros y herramientas bien implementadas.",
-    "description": "Consultoría basada en ITIL, análisis de brechas e implementación y mejora de IBM Maximo IT y GLPI.",
+    "headline": "Consultoría e implementación ITSM para mejorar la atención de TI",
+    "description": "Los procesos claros mejoran el servicio; la herramienta debe apoyarlos.",
     "intro": [
-      "Las atenciones demoradas, los incidentes recurrentes y los equipos sobrecargados necesitan una revisión del servicio. En Optimize IT combinamos consultoría de procesos con implementación y administración de herramientas para organizar el soporte y dar visibilidad a sus prioridades de mejora."
+      "Ayudamos a su organización a identificar brechas en la gestión de servicios de TI, priorizar mejoras y configurar herramientas que faciliten la atención. Nuestro enfoque combina consultoría de procesos basada en ITIL con implementación y evolución de IBM Maximo IT y GLPI."
     ],
-    "challenge": "Si sus usuarios reciben una atención inconsistente, los casos no tienen responsables claros o necesita justificar mejoras ante la dirección, podemos comenzar con un análisis de brechas basado en ITIL.",
-    "capabilityTitle": "Cómo lo ayudamos",
+    "challenge": "Los incidentes y solicitudes tardan más de lo esperado o no tienen responsables claros. Existen flujos manuales, reprocesos o escasa visibilidad de la operación. La organización necesita priorizar mejoras y sustentar decisiones ante la dirección.",
+    "capabilityTitle": "Qué incluye nuestra propuesta",
     "capabilities": [
       {
         "title": "Análisis de brechas",
-        "description": "evaluamos la situación actual, identificamos dificultades y construimos un plan de mejora priorizado."
+        "description": "Revisamos procesos, herramientas y capacidades para identificar dificultades y prioridades de mejora."
       },
       {
-        "title": "Procesos de servicio",
-        "description": "definimos roles, procedimientos y flujos para los procesos incluidos en el alcance, como incidentes, solicitudes, problemas y cambios."
+        "title": "Diseño de procesos",
+        "description": "Definimos flujos, responsables y procedimientos para incidentes, solicitudes, problemas y cambios, según el alcance."
       },
       {
-        "title": "Implementación de herramientas",
-        "description": "configuramos IBM Maximo IT o GLPI para apoyar los procesos, la asignación y el seguimiento del servicio."
+        "title": "Implementación y parametrización",
+        "description": "Configuramos IBM Maximo IT o GLPI para apoyar la operación definida."
       },
       {
-        "title": "Operación y mejora continua",
-        "description": "administramos la plataforma, ajustamos sus funcionalidades y acompañamos la evolución de los procesos contratados."
+        "title": "Administración y mejora",
+        "description": "Acompañamos ajustes funcionales, adopción y evolución de la herramienta y procesos contratados."
       }
     ],
     "sections": [
       {
-        "title": "Un diagnóstico que ayuda a decidir",
+        "title": "Por qué Optimize IT",
         "paragraphs": [
-          "El análisis permite explicar a las directivas dónde están las brechas y qué acciones conviene priorizar. La herramienta se configura para apoyar el proceso y a las personas que lo ejecutan."
+          "Nuestra experiencia en administración y parametrización de IBM Maximo IT se combina con conocimiento de procesos ITIL. No proponemos cambiar de herramienta antes de entender el problema que debe resolverse."
         ],
         "bullets": []
       },
       {
-        "title": "Experiencia especializada",
+        "title": "Tecnologías y compatibilidad",
         "paragraphs": [
-          "Nuestro enfoque incorpora conocimiento de ITIL y experiencia en administración y parametrización de IBM Maximo IT. Para incorporar atención mediante IA al primer nivel, conozca Optidesk."
+          "ITIL como marco de buenas prácticas, IBM Maximo IT y GLPI como plataformas de soporte a la gestión de servicios, según la solución seleccionada."
         ],
         "bullets": []
       }
     ],
     "faqs": [
       {
-        "question": "¿Necesito cambiar mi herramienta?",
-        "answer": "Primero revisamos los procesos y la plataforma actual para definir las mejoras."
+        "question": "¿Debo reemplazar mi herramienta de mesa de servicio?",
+        "answer": "No necesariamente. Empezamos revisando sus procesos y la solución existente."
       },
       {
-        "question": "¿ITSM es lo mismo que OptiNOC?",
-        "answer": "ITSM organiza la gestión del servicio; OptiNOC se orienta al monitoreo, diagnóstico y escalamiento de la operación tecnológica."
+        "question": "¿ITSM es lo mismo que monitoreo?",
+        "answer": "No. ITSM organiza la gestión de servicios; el monitoreo detecta señales de la operación y puede integrarse a procesos de atención."
+      },
+      {
+        "question": "¿Pueden incorporar IA al primer nivel?",
+        "answer": "Podemos evaluar Optidesk como solución complementaria, considerando casos de uso, conocimiento e integraciones disponibles."
       }
     ],
-    "closing": "Identifique qué está afectando la atención de TI y por dónde comenzar a mejorar."
+    "closing": "Identifique dónde se están perdiendo tiempo y trazabilidad en la atención de TI.",
+    "subtitle": "Los procesos claros mejoran el servicio; la herramienta debe apoyarlos.",
+    "cta": "Evaluar la gestión de servicios de TI",
+    "secondaryCta": "Conocer nuestras capacidades ITSM",
+    "challenges": [
+      "Los incidentes y solicitudes tardan más de lo esperado o no tienen responsables claros.",
+      "Existen flujos manuales, reprocesos o escasa visibilidad de la operación.",
+      "La organización necesita priorizar mejoras y sustentar decisiones ante la dirección."
+    ],
+    "benefits": [
+      "Identificar brechas y establecer una ruta de mejora priorizada.",
+      "Clarificar roles, flujos y responsabilidades para la atención de servicios.",
+      "Contar con herramientas configuradas para dar seguimiento al proceso acordado."
+    ],
+    "process": [
+      {
+        "title": "Diagnosticar",
+        "text": "Revisamos el estado actual y acordamos el alcance."
+      },
+      {
+        "title": "Priorizar",
+        "text": "Seleccionamos procesos y brechas de mayor importancia."
+      },
+      {
+        "title": "Implementar",
+        "text": "Configuramos flujos, responsables y mecanismos de seguimiento."
+      },
+      {
+        "title": "Evolucionar",
+        "text": "Evaluamos la operación y realizamos ajustes planificados."
+      }
+    ],
+    "seoTitle": "Consultoría ITSM, ITIL, Maximo IT y GLPI | Optimize IT",
+    "metaDescription": "Mejore incidentes, solicitudes, cambios y atención de TI con consultoría ITSM basada en ITIL e implementación de IBM Maximo IT o GLPI."
   },
   {
     "slug": "optinoc",
     "name": "OptiNOC",
-    "headline": "Una alerta necesita contexto y alguien que actúe.",
-    "description": "Centro de operaciones de TI con inteligencia artificial para integrar monitoreo, apoyar el diagnóstico y contactar a los administradores.",
+    "headline": "OptiNOC: monitoreo inteligente y gestión de alertas de TI con IA",
+    "description": "Una alerta necesita contexto y alguien que actúe.",
     "intro": [
-      "OptiNOC es un desarrollo propio de Optimize IT. Orquesta herramientas de monitoreo, conecta información de las plataformas y coordina la notificación a los responsables cuando se presentan incidentes o señales de riesgo."
+      "OptiNOC es una solución desarrollada por Optimize IT para conectar señales de monitoreo con información útil para la atención. Reúne evidencia de las plataformas autorizadas y coordina las notificaciones y rutas de escalamiento definidas, ayudando al equipo a entender qué ocurre y a contactar al responsable."
     ],
-    "challenge": "Si recibe alertas dispersas, dedica demasiado tiempo a buscar información o tiene dificultades para contactar al especialista de turno, OptiNOC ayuda a organizar la respuesta alrededor de sus servicios críticos.",
-    "capabilityTitle": "Qué aporta a su operación",
+    "challenge": "Las alertas llegan desde herramientas dispersas y sin suficiente contexto. Localizar al administrador adecuado requiere varios pasos manuales. El especialista necesita consultar diferentes plataformas antes de iniciar el análisis.",
+    "capabilityTitle": "Qué incluye nuestra propuesta",
     "capabilities": [
       {
         "title": "Integración del monitoreo",
-        "description": "reúne señales de herramientas como Nagios e IBM Instana, según las integraciones configuradas."
+        "description": "Conecta señales de herramientas como Nagios e IBM Instana cuando la integración está disponible y configurada."
       },
       {
-        "title": "Diagnóstico asistido",
-        "description": "consulta las plataformas autorizadas y reúne evidencia para ayudar a entender qué ocurre y orientar la atención."
+        "title": "Contexto de diagnóstico",
+        "description": "Consulta fuentes habilitadas y reúne información de soporte para orientar la evaluación del incidente."
       },
       {
-        "title": "Contacto con administradores",
-        "description": "realiza llamadas y aplica la ruta de notificación y escalamiento definida para el servicio."
+        "title": "Notificación y escalamiento",
+        "description": "Realiza contactos y aplica rutas de notificación a los administradores, conforme a reglas definidas."
       },
       {
-        "title": "Consulta por voz",
-        "description": "permite interactuar con OPTI, el asistente de OptiNOC, para obtener información diagnóstica dentro del alcance habilitado."
+        "title": "Asistente OPTI",
+        "description": "Permite consultas por voz sobre información diagnóstica dentro de las capacidades y permisos habilitados."
       }
     ],
     "sections": [
       {
-        "title": "Un incidente explicado en contexto",
+        "title": "Por qué Optimize IT",
         "paragraphs": [
-          "Una herramienta de monitoreo genera una alerta. OptiNOC reúne información del entorno, identifica al responsable definido y lo contacta para facilitar la atención. La evidencia ayuda al especialista a diagnosticar y corregir; las acciones sobre la plataforma se delimitan por permisos y procedimientos."
+          "OptiNOC es una solución propia que combina conocimiento de operación de TI con capacidades de integración e inteligencia artificial. Puede evaluarse mediante un piloto con objetivos, fuentes y métricas acordados; el piloto no se presume gratuito."
         ],
         "bullets": []
       },
       {
-        "title": "Comience por sus servicios críticos",
+        "title": "Tecnologías y compatibilidad",
         "paragraphs": [
-          "En la asesoría identificamos las fuentes de monitoreo, plataformas y rutas de atención que conviene integrar. Podemos definir un piloto con objetivos y métricas acordados para evaluar el aporte a su operación."
+          "Integraciones con herramientas de monitoreo y plataformas autorizadas. Los conectores y capacidades disponibles deben confirmarse según la versión y arquitectura de cada cliente."
         ],
         "bullets": []
       }
     ],
     "faqs": [
       {
-        "question": "¿Debo reemplazar mis herramientas de monitoreo?",
-        "answer": "Evaluamos cómo integrarlas dentro de la arquitectura de OptiNOC."
+        "question": "¿Debo reemplazar las herramientas de monitoreo?",
+        "answer": "No necesariamente. Evaluamos la viabilidad de integrar las herramientas existentes."
       },
       {
-        "question": "¿La IA corrige cualquier incidente automáticamente?",
-        "answer": "Las consultas y acciones habilitadas dependen de las integraciones, permisos y alcance definidos."
+        "question": "¿La IA soluciona automáticamente cualquier incidente?",
+        "answer": "No. Las consultas y acciones posibles dependen de integraciones, permisos y procedimientos habilitados; el especialista mantiene responsabilidades definidas."
+      },
+      {
+        "question": "¿Puede contactar al personal de turno?",
+        "answer": "La solución contempla rutas de notificación y llamadas, sujetas a la configuración y al esquema de responsables del servicio."
       }
     ],
-    "closing": "Conversemos sobre cómo atender las alertas de sus servicios críticos."
+    "closing": "Conozca cómo conectar las alertas de sus servicios críticos con una respuesta mejor organizada.",
+    "subtitle": "Una alerta necesita contexto y alguien que actúe.",
+    "cta": "Solicitar presentación de OptiNOC",
+    "secondaryCta": "Explorar cómo funciona",
+    "challenges": [
+      "Las alertas llegan desde herramientas dispersas y sin suficiente contexto.",
+      "Localizar al administrador adecuado requiere varios pasos manuales.",
+      "El especialista necesita consultar diferentes plataformas antes de iniciar el análisis."
+    ],
+    "benefits": [
+      "Centralizar información relevante para interpretar una alerta de acuerdo con las integraciones disponibles.",
+      "Agilizar la identificación y el contacto con responsables siguiendo rutas acordadas.",
+      "Facilitar el diagnóstico con evidencia consultable por el personal autorizado."
+    ],
+    "process": [
+      {
+        "title": "Detectar",
+        "text": "Una plataforma de monitoreo genera una señal o alerta."
+      },
+      {
+        "title": "Contextualizar",
+        "text": "OptiNOC consulta fuentes autorizadas y reúne la evidencia."
+      },
+      {
+        "title": "Contactar",
+        "text": "Se ejecuta la ruta de notificación y escalamiento configurada."
+      },
+      {
+        "title": "Atender",
+        "text": "El especialista revisa la información y realiza las acciones permitidas."
+      }
+    ],
+    "seoTitle": "OptiNOC: monitoreo inteligente de TI con IA | Optimize IT",
+    "metaDescription": "OptiNOC integra alertas de monitoreo, reúne contexto de diagnóstico y coordina el contacto con responsables de TI según las integraciones habilitadas."
   },
   {
     "slug": "optidesk",
     "name": "Optidesk",
-    "headline": "Atención de primer nivel con IA para su mesa de servicio.",
-    "description": "Un agente de inteligencia artificial de Optimize IT para atender consultas y apoyar la gestión inicial del soporte a usuarios.",
+    "headline": "Optidesk: atención de primer nivel con IA para su mesa de servicio",
+    "description": "Más capacidad para atender consultas repetitivas; más tiempo del equipo para casos complejos.",
     "intro": [
-      "Las consultas repetitivas consumen tiempo que su equipo necesita para casos más complejos. Optidesk es un desarrollo propio de Optimize IT que incorpora IA al primer nivel de atención y se integra con la gestión del servicio según las necesidades de su organización."
+      "Optidesk es una solución propia de Optimize IT que incorpora un agente de inteligencia artificial a la mesa de servicio. Ayuda a atender consultas seleccionadas, utiliza conocimiento de soporte autorizado y contempla la derivación de situaciones que requieren atención humana."
     ],
-    "challenge": "Si su mesa de servicio está saturada, los usuarios esperan demasiado para recibir orientación o su equipo responde las mismas preguntas una y otra vez, podemos evaluar qué atenciones conviene delegar a un agente de IA.",
-    "capabilityTitle": "Cómo se incorpora a la atención",
+    "challenge": "Una parte significativa de las consultas de usuarios se repite todos los días. Los equipos de soporte invierten tiempo en orientar solicitudes de baja complejidad. La calidad de respuesta depende de dónde esté documentado el conocimiento.",
+    "capabilityTitle": "Qué incluye nuestra propuesta",
     "capabilities": [
       {
-        "title": "Selección de casos",
-        "description": "identificamos las consultas y solicitudes apropiadas para atención mediante IA."
+        "title": "Selección de casos de uso",
+        "description": "Definimos las consultas y solicitudes apropiadas para una atención inicial asistida por IA."
       },
       {
         "title": "Conocimiento de soporte",
-        "description": "definimos la información y los procedimientos que el agente puede utilizar para orientar al usuario."
+        "description": "Estructuramos fuentes, respuestas y procedimientos que el agente puede utilizar bajo reglas de acceso."
       },
       {
-        "title": "Integración con el servicio",
-        "description": "acordamos la conexión con la plataforma ITSM y el manejo de los casos que requieren intervención humana."
+        "title": "Integración ITSM",
+        "description": "Evaluamos interfaces, registro o transferencia de casos y los mecanismos disponibles para la plataforma del cliente."
       },
       {
-        "title": "Evaluación y ajuste",
-        "description": "revisamos el funcionamiento del agente sobre los casos incluidos para mejorar la atención."
+        "title": "Evolución controlada",
+        "description": "Revisamos resultados, errores y necesidades de ajuste sobre los casos incorporados al servicio."
       }
     ],
     "sections": [
       {
-        "title": "Un primer nivel alineado con sus procesos",
+        "title": "Por qué Optimize IT",
         "paragraphs": [
-          "Optidesk se plantea como parte de su mesa de servicio. Su implementación debe definir qué puede atender, cuándo debe derivar un caso y cómo mantener actualizado el conocimiento de soporte."
+          "Optidesk combina desarrollo propio con experiencia de Optimize IT en ITSM y procesos de mesa de servicio. Su implementación parte de casos acotados y de una ruta humana para las excepciones, en lugar de prometer automatización indiscriminada."
         ],
         "bullets": []
       },
       {
-        "title": "Tecnología propia con experiencia en ITSM",
+        "title": "Tecnologías y compatibilidad",
         "paragraphs": [
-          "Combinamos el desarrollo de Optidesk con nuestra experiencia en procesos ITIL y herramientas de gestión del servicio. La solución se configura alrededor de sus necesidades de atención."
+          "Solución de IA de Optimize IT, configurable según el conocimiento de soporte y las interfaces disponibles de la plataforma ITSM del cliente."
         ],
         "bullets": []
       }
     ],
     "faqs": [
       {
-        "question": "¿Puede atender todos los casos?",
-        "answer": "El alcance se define con su organización. Los casos que requieran un especialista deben contar con una ruta de atención humana."
+        "question": "¿Puede atender cualquier solicitud?",
+        "answer": "No. Se establecen los tipos de consulta permitidos y los criterios para transferir casos a una persona."
       },
       {
-        "question": "¿Funciona con mi herramienta de mesa de servicio?",
-        "answer": "Revisamos la plataforma, las interfaces y los requisitos para confirmar la integración disponible."
+        "question": "¿Necesito cambiar mi plataforma ITSM?",
+        "answer": "No necesariamente. Revisamos interfaces y compatibilidad antes de confirmar una integración."
+      },
+      {
+        "question": "¿Cómo se controla la calidad de las respuestas?",
+        "answer": "Definimos fuentes autorizadas, procedimientos y una revisión de los casos atendidos y derivados."
       }
     ],
-    "closing": "Identifique qué consultas de su mesa de servicio podría atender con inteligencia artificial."
+    "closing": "Identifiquemos qué consultas podría asumir un primer nivel asistido por IA en su organización.",
+    "subtitle": "Más capacidad para atender consultas repetitivas; más tiempo del equipo para casos complejos.",
+    "cta": "Solicitar presentación de Optidesk",
+    "secondaryCta": "Conocer casos de uso",
+    "challenges": [
+      "Una parte significativa de las consultas de usuarios se repite todos los días.",
+      "Los equipos de soporte invierten tiempo en orientar solicitudes de baja complejidad.",
+      "La calidad de respuesta depende de dónde esté documentado el conocimiento."
+    ],
+    "benefits": [
+      "Ofrecer una primera orientación consistente para los casos que se decida habilitar.",
+      "Organizar conocimiento y procedimientos reutilizables dentro de la atención.",
+      "Facilitar que las consultas no resueltas se transfieran al responsable humano definido."
+    ],
+    "process": [
+      {
+        "title": "Seleccionar",
+        "text": "Priorizamos consultas frecuentes, permitidas y de riesgo controlado."
+      },
+      {
+        "title": "Preparar",
+        "text": "Definimos conocimiento, acceso y reglas de respuesta."
+      },
+      {
+        "title": "Conectar",
+        "text": "Acordamos el paso a especialistas y la integración posible."
+      },
+      {
+        "title": "Evaluar",
+        "text": "Medimos la atención en el alcance habilitado y ajustamos."
+      }
+    ],
+    "seoTitle": "Optidesk: agente de IA para mesa de ayuda | Optimize IT",
+    "metaDescription": "Conozca Optidesk, agente de IA de Optimize IT para atender consultas frecuentes de usuarios, orientar solicitudes y apoyar el primer nivel de soporte."
   },
   {
     "slug": "backup-as-a-service",
     "name": "Backup as a Service",
-    "headline": "Protección de sus datos como un servicio administrado.",
-    "description": "Una solución de respaldo por una mensualidad, con software, infraestructura, procesos y especialistas dentro del alcance contratado.",
+    "headline": "Backup as a Service: respaldo administrado para su empresa",
+    "description": "Protección de datos como servicio, sin tener que operar toda la solución por su cuenta.",
     "intro": [
-      "Si necesita proteger su información sin construir y operar toda la solución por su cuenta, Optimize IT ofrece Backup as a Service. Integramos la tecnología necesaria con la administración de los respaldos y la atención de solicitudes de restauración."
+      "Con Backup as a Service, Optimize IT puede integrar la tecnología necesaria y la operación especializada de los respaldos en una propuesta mensual. Diseñamos capacidad, políticas, almacenamiento y atención de restauraciones a partir de sus datos y objetivos de recuperación."
     ],
-    "challenge": "Cuando le faltan herramientas, capacidad de almacenamiento o personal para proteger sus datos, podemos diseñar un servicio integral conforme a sus cargas y objetivos de recuperación.",
-    "capabilityTitle": "Qué puede incluir la solución",
+    "challenge": "Necesita respaldo confiable, pero no dispone de toda la infraestructura o el personal. La capacidad de almacenamiento y el crecimiento complican su operación actual. Busca una propuesta integral con responsabilidades y servicio claramente acordados.",
+    "capabilityTitle": "Qué incluye nuestra propuesta",
     "capabilities": [
       {
-        "title": "Software e infraestructura",
-        "description": "Software de respaldo y recursos de infraestructura dimensionados para la información incluida en el servicio."
+        "title": "Plataforma de respaldo",
+        "description": "Software y componentes de infraestructura dimensionados para la información incluida en el contrato."
       },
       {
-        "title": "Procesos de protección",
-        "description": "Procedimientos y políticas de respaldo, retención y restauración acordados con su empresa."
+        "title": "Políticas y retención",
+        "description": "Definición de frecuencias, conservación, ubicación de copias y procedimientos de restauración acordados."
       },
       {
         "title": "Operación especializada",
-        "description": "Especialistas que supervisan la ejecución de los respaldos y atienden las fallas dentro de la cobertura contratada."
+        "description": "Seguimiento de ejecuciones, tratamiento de fallas y actividades de administración en las ventanas contratadas."
       },
       {
-        "title": "Restauración y capacitación",
-        "description": "Atención de solicitudes de restauración y capacitación contemplada en el alcance."
+        "title": "Solicitudes de restauración",
+        "description": "Atención y acompañamiento a restauraciones, con condiciones de servicio y responsabilidades establecidas."
       }
     ],
     "sections": [
       {
-        "title": "Una solución ajustada a sus necesidades",
+        "title": "Por qué Optimize IT",
         "paragraphs": [
-          "Definimos qué datos proteger, dónde guardar las copias y cómo atender las recuperaciones. Una arquitectura implementada por Optimize IT combina Veeam Backup & Replication, almacenamiento ExaGrid y nube Wasabi; cada proyecto requiere su propio dimensionamiento."
+          "La diferencia frente a Managed Services es el modelo de contratación: en Backup as a Service la propuesta puede incorporar tecnología y operación de respaldo; en Managed Services administramos plataformas del cliente. Cada oferta define componentes, cobertura y SLA concretos."
         ],
         "bullets": []
       },
       {
-        "title": "Responsabilidades y niveles de servicio",
+        "title": "Tecnologías y compatibilidad",
         "paragraphs": [
-          "La propuesta establece capacidad, retención, cobertura, responsabilidades y SLA. Los tiempos de atención y recuperación se acuerdan según los datos y la arquitectura del servicio."
+          "Las soluciones pueden incluir Veeam Backup & Replication, almacenamiento ExaGrid y nube Wasabi, como en una arquitectura de referencia utilizada por Optimize IT. La composición final depende de la necesidad y compatibilidad."
         ],
         "bullets": []
       }
     ],
     "faqs": [
       {
-        "question": "¿En qué se diferencia de Managed Services?",
-        "answer": "Backup as a Service incluye la solución de respaldo completa. Managed Services aporta especialistas para administrar las herramientas y la infraestructura que el cliente ya tiene."
+        "question": "¿Es igual que administrar mi herramienta actual de backup?",
+        "answer": "No. BaaS puede incluir la solución tecnológica integral; Managed Services se enfoca en administrar las plataformas que ya tiene el cliente."
       },
       {
-        "question": "¿La mensualidad es la misma para todas las empresas?",
-        "answer": "El alcance y el dimensionamiento se definen a partir de su necesidad de protección."
+        "question": "¿Existe una tarifa única?",
+        "answer": "No. La mensualidad depende de cargas, volúmenes, retención, cobertura y arquitectura."
+      },
+      {
+        "question": "¿Incluye recuperación ante cualquier desastre?",
+        "answer": "Las restauraciones, objetivos y responsabilidades se definen según el contrato y la arquitectura; no se promete una recuperación ilimitada."
       }
     ],
-    "closing": "Cuéntenos qué información necesita proteger y evaluemos un servicio a su medida."
+    "closing": "Conversemos sobre la información que necesita proteger y diseñemos un servicio acorde con sus cargas.",
+    "subtitle": "Protección de datos como servicio, sin tener que operar toda la solución por su cuenta.",
+    "cta": "Solicitar propuesta de respaldo administrado",
+    "secondaryCta": "Conocer cómo funciona BaaS",
+    "challenges": [
+      "Necesita respaldo confiable, pero no dispone de toda la infraestructura o el personal.",
+      "La capacidad de almacenamiento y el crecimiento complican su operación actual.",
+      "Busca una propuesta integral con responsabilidades y servicio claramente acordados."
+    ],
+    "benefits": [
+      "Una solución diseñada alrededor de cargas, volúmenes y retención requeridos.",
+      "Especialistas que supervisan tareas y atienden eventos y solicitudes dentro de la cobertura contratada.",
+      "Una relación de servicio con responsabilidades, procedimientos y SLA definidos por contrato."
+    ],
+    "process": [
+      {
+        "title": "Caracterizar",
+        "text": "Identificamos cargas, volúmenes, retención y criticidad."
+      },
+      {
+        "title": "Dimensionar",
+        "text": "Definimos arquitectura y responsabilidades de protección."
+      },
+      {
+        "title": "Poner en marcha",
+        "text": "Implementamos políticas, operación y procedimientos."
+      },
+      {
+        "title": "Prestar el servicio",
+        "text": "Supervisamos y atendemos los eventos y solicitudes contratados."
+      }
+    ],
+    "seoTitle": "Backup as a Service: respaldo administrado | Optimize IT",
+    "metaDescription": "Contrate respaldo como servicio con tecnología, procedimientos y especialistas bajo una mensualidad y un alcance diseñado para su organización."
   },
   {
     "slug": "cleanshield",
     "name": "Optimize CleanShield",
-    "headline": "Valide sus respaldos antes de devolverlos a producción.",
-    "description": "Evaluación, análisis y tratamiento de respaldos en entornos aislados para preparar una recuperación con mayor confianza.",
+    "headline": "CleanShield: valide sus respaldos antes de recuperar producción",
+    "description": "Tener una copia no siempre significa que esté lista para restaurarse.",
     "intro": [
-      "Una copia inmutable puede conservar datos que ya estaban comprometidos al respaldarse. CleanShield es una solución de Optimize IT basada en Predatar para analizar respaldos y realizar actividades de limpieza y validación en una clean room o entorno aislado de recuperación."
+      "Una copia protegida puede contener información que ya estaba comprometida cuando fue respaldada. CleanShield es una solución de Optimize IT basada en Predatar para analizar y tratar cargas compatibles en entornos aislados, reuniendo evidencia antes de decidir una recuperación crítica."
     ],
-    "challenge": "Si necesita comprobar la condición de sus respaldos, preparar una recuperación frente a ransomware o evitar reintroducir amenazas al restaurar, podemos evaluar una estrategia de validación aislada.",
-    "capabilityTitle": "Cómo lo ayudamos",
+    "challenge": "Necesita reducir el riesgo de reintroducir amenazas durante una restauración. No cuenta con un entorno aislado para examinar o probar cargas recuperadas. Le falta evidencia para decidir qué copias son candidatas a recuperación.",
+    "capabilityTitle": "Qué incluye nuestra propuesta",
     "capabilities": [
       {
-        "title": "Integración de fuentes",
-        "description": "revisamos respaldos de plataformas como Veeam Backup & Replication, IBM Storage Protect e IBM Storage Defender Data Protect, según compatibilidad."
+        "title": "Revisión de fuentes",
+        "description": "Evaluamos respaldos de plataformas compatibles y los requisitos de la arquitectura."
       },
       {
-        "title": "Recuperación aislada",
-        "description": "preparamos un entorno separado de producción para ejecutar las actividades de análisis y prueba definidas."
+        "title": "Entorno aislado",
+        "description": "Preparamos una clean room para las actividades de análisis, recuperación de prueba y tratamiento definidas."
       },
       {
         "title": "Análisis y tratamiento",
-        "description": "utilizamos las capacidades de Predatar para identificar amenazas y apoyar la limpieza de las cargas compatibles."
+        "description": "Utilizamos las capacidades habilitadas de Predatar para examinar y apoyar el tratamiento de cargas compatibles."
       },
       {
-        "title": "Validación de recuperación",
-        "description": "reunimos evidencia de las pruebas y definimos con su equipo los criterios para utilizar las copias evaluadas."
+        "title": "Validación y evidencia",
+        "description": "Documentamos los criterios y resultados de las pruebas para su revisión por los responsables autorizados."
       }
     ],
     "sections": [
       {
-        "title": "Recuperar con evidencia",
+        "title": "Por qué Optimize IT",
         "paragraphs": [
-          "El objetivo es reducir el riesgo de restaurar información comprometida y comprobar la recuperación de las cargas incluidas. La evaluación considera el respaldo, la aplicación y las condiciones del entorno de recuperación."
+          "CleanShield complementa la estrategia de respaldo y no sustituye la protección primaria. El alcance de cada prueba depende de plataformas, compatibilidades, licencias y capacidades efectivamente habilitadas."
         ],
         "bullets": []
       },
       {
-        "title": "Parte de su estrategia de ciberresiliencia",
+        "title": "Tecnologías y compatibilidad",
         "paragraphs": [
-          "CleanShield complementa las herramientas de respaldo y los procedimientos de recuperación. Su alcance se diseña según las plataformas, cargas y objetivos de su organización."
+          "Predatar y fuentes compatibles como Veeam Backup & Replication, IBM Storage Protect o IBM Storage Defender Data Protect, según validación técnica."
         ],
         "bullets": []
       }
     ],
     "faqs": [
       {
-        "question": "¿Reemplaza mi plataforma de backup?",
-        "answer": "Se integra con fuentes compatibles para añadir validación y tratamiento de recuperación."
+        "question": "¿Reemplaza mi solución actual de backup?",
+        "answer": "No. Se integra con fuentes compatibles para complementar su estrategia de recuperación."
       },
       {
-        "question": "¿Puede garantizar que cualquier respaldo está libre de amenazas?",
-        "answer": "La validación se realiza sobre las cargas, mecanismos de análisis y criterios acordados. Los resultados deben revisarse antes de autorizar la recuperación."
+        "question": "¿Garantiza que todos los respaldos están libres de amenazas?",
+        "answer": "No. El análisis se limita a cargas, mecanismos y criterios de evaluación definidos; los resultados deben revisarse."
+      },
+      {
+        "question": "¿Puede probarse sin afectar producción?",
+        "answer": "El diseño prevé un entorno aislado; los componentes, flujos y condiciones de aislamiento deben definirse en el proyecto."
       }
     ],
-    "closing": "Evalúe cómo comprobar sus respaldos antes de una recuperación crítica."
+    "closing": "Evalúe cómo incorporar evidencia y aislamiento a la recuperación de sus cargas críticas.",
+    "subtitle": "Tener una copia no siempre significa que esté lista para restaurarse.",
+    "cta": "Evaluar mi estrategia de recuperación aislada",
+    "secondaryCta": "Entender el proceso de validación",
+    "challenges": [
+      "Necesita reducir el riesgo de reintroducir amenazas durante una restauración.",
+      "No cuenta con un entorno aislado para examinar o probar cargas recuperadas.",
+      "Le falta evidencia para decidir qué copias son candidatas a recuperación."
+    ],
+    "benefits": [
+      "Separar actividades de análisis y validación del ambiente de producción.",
+      "Reunir evidencia para apoyar decisiones sobre las cargas evaluadas.",
+      "Integrar el tratamiento de recuperación dentro de una estrategia más amplia de ciberresiliencia."
+    ],
+    "process": [
+      {
+        "title": "Seleccionar",
+        "text": "Definimos cargas prioritarias, fuentes y criterios de prueba."
+      },
+      {
+        "title": "Aislar",
+        "text": "Disponemos el entorno de evaluación separado de producción."
+      },
+      {
+        "title": "Analizar",
+        "text": "Ejecutamos las capacidades de revisión y tratamiento aplicables."
+      },
+      {
+        "title": "Decidir",
+        "text": "El equipo revisa la evidencia antes de autorizar una recuperación."
+      }
+    ],
+    "seoTitle": "CleanShield: validación de respaldos aislados | Optimize IT",
+    "metaDescription": "Prepare recuperaciones críticas con análisis, tratamiento y validación de respaldos en entornos aislados mediante una solución basada en Predatar."
   }
 ]

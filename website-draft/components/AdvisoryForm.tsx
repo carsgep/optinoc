@@ -7,7 +7,7 @@ export function AdvisoryForm({ service = "" }: { service?: string }) {
     <section id="contacto" className="advisory-section shell">
       <div className="advisory-copy">
         <p className="eyebrow">CONVERSEMOS SOBRE SU NECESIDAD</p>
-        <h2>Reciba asesoría gratuita.</h2>
+        <h2>Conversemos sobre su necesidad de TI</h2>
         <p>
           Cuéntenos qué necesita proteger, administrar o mejorar. Un
           especialista de Optimize IT podrá orientarlo sobre los próximos pasos.
@@ -69,7 +69,7 @@ export function AdvisoryForm({ service = "" }: { service?: string }) {
           />
         </label>
         <button className="button primary" type="submit">
-          Solicitar asesoría gratuita <span aria-hidden="true">↗</span>
+          Solicitar asesoría <span aria-hidden="true">↗</span>
         </button>
         <p className="form-note">
           Formulario de demostración · no registra ni transmite datos.

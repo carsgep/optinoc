@@ -1,12 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { landings } from "@/content/landings";
+import { landings, primaryLandings } from "@/content/landings";
 export function ServiceCards({ slugs }: { slugs?: string[] }) {
   const items = slugs
     ? slugs
         .map((slug) => landings.find((s) => s.slug === slug))
         .filter((s) => !!s)
-    : landings;
+    : primaryLandings;
   return (
     <div className="service-card-grid">
       {items.map((s) => (
@@ -28,6 +28,11 @@ export function ServiceCards({ slugs }: { slugs?: string[] }) {
             <p className="eyebrow">{s.category}</p>
             <h3>{s.shortName}</h3>
             <p>{s.description}</p>
+            {s.slug === "protect-recover" && (
+              <p className="protection-card-note">
+                Incluye Backup as a Service y CleanShield
+              </p>
+            )}
             <span className="card-link">
               Explorar la solución <span aria-hidden="true">→</span>
             </span>

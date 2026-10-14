@@ -4,30 +4,8 @@ import type { Landing } from "@/content/landings";
 import { ServiceCards } from "./ServiceCards";
 import { AdvisoryForm } from "./AdvisoryForm";
 export function ServiceLanding({ service: s }: { service: Landing }) {
-  const experience: Record<string, { title: string; body: string }> = {
-    "protect-recover": {
-      title: "Preparar la recuperación de millones de archivos.",
-      body: "Después del colapso de un servidor de archivos y una recuperación prolongada desde cintas, Optimize IT implementó una solución IBM Storage Defender para mejorar los procesos de respaldo y recuperación del cliente.",
-    },
-    "managed-services": {
-      title: "Especialistas para una nueva plataforma IBM Fusion HCI.",
-      body: "Una entidad financiera necesitaba administrar su nueva plataforma de virtualización. Optimize IT aportó especialistas e incorporó OptiNOC al monitoreo de sus servicios.",
-    },
-    optinoc: {
-      title: "Monitoreo integrado con administración especializada.",
-      body: "En una entidad financiera con una nueva plataforma IBM Fusion HCI, Optimize IT combinó especialistas y OptiNOC para apoyar la operación de sus servicios.",
-    },
-    itsm: {
-      title: "Administración y parametrización de Maximo IT.",
-      body: "En una operación de mesa de servicio, Optimize IT aportó especialistas para administrar Maximo IT, parametrizar los flujos de procesos y mantener las funcionalidades de la plataforma.",
-    },
-    "backup-as-a-service": {
-      title: "Veeam, ExaGrid y Wasabi en una solución administrada.",
-      body: "Para un cliente que requería protección integral, implementamos Backup as a Service. Nuestro equipo supervisa diariamente los respaldos y atiende las restauraciones conforme a los SLA acordados.",
-    },
-  };
   return (
-    <main id="contenido" className="service-landing">
+    <main id="contenido" className="service-landing service-v2">
       <section className="service-hero">
         <picture>
           <source media="(max-width: 700px)" srcSet={s.mobileSrc} />
@@ -35,49 +13,76 @@ export function ServiceLanding({ service: s }: { service: Landing }) {
         </picture>
         <div className="service-hero-shade" />
         <div className="shell service-hero-copy">
-          <Link className="back-link" href="/home-v2/#servicios">
-            ← Todas las soluciones
+          <Link
+            className="back-link"
+            href={
+              s.parentSlug
+                ? "/soluciones/protect-recover/"
+                : "/home-v2/#servicios"
+            }
+          >
+            ← {s.parentSlug ? "Protect and Recover" : "Todas las soluciones"}
           </Link>
           <p className="eyebrow">
+            {s.parentSlug ? "PROTECT AND RECOVER / " : ""}
             {s.category} / {s.shortName}
           </p>
           <h1>{s.headline}</h1>
-          <p>{s.description}</p>
+          <p className="service-subtitle">{s.subtitle}</p>
           <div className="hero-actions">
             <a className="button primary" href="#contacto">
-              Solicitar asesoría gratuita ↗
+              {s.cta} ↗
             </a>
-            <a className="service-secondary-link" href="#alcance">
-              Conocer el servicio ↓
+            <a
+              className="service-secondary-link"
+              href={
+                s.slug === "protect-recover"
+                  ? "#soluciones-proteccion"
+                  : "#alcance"
+              }
+            >
+              {s.secondaryCta} ↓
             </a>
           </div>
         </div>
         <span className="service-image-note">Visual conceptual</span>
         <nav className="service-section-nav shell" aria-label="En esta página">
           <a href="#reto">Su necesidad</a>
-          <a href="#alcance">Cómo lo ayudamos</a>
-          <a href="#enfoque">Nuestro enfoque</a>
+          <a href="#beneficios">Beneficios</a>
+          <a href="#alcance">Nuestra propuesta</a>
+          {s.slug === "protect-recover" && (
+            <a href="#soluciones-proteccion">Soluciones de protección</a>
+          )}
+          <a href="#proceso">Cómo trabajamos</a>
           <a href="#preguntas">Preguntas frecuentes</a>
         </nav>
       </section>
       <section id="reto" className="service-intro shell">
         <div>
           <p className="eyebrow">01 / SU NECESIDAD</p>
-          <h2>
-            {s.slug === "itsm"
-              ? "Un mejor servicio comienza por entender el proceso."
-              : s.slug === "optinoc"
-                ? "Menos búsqueda. Más contexto para actuar."
-                : s.slug === "cleanshield"
-                  ? "Preparar la recuperación también es proteger."
-                  : "Una solución que parte de su operación."}
-          </h2>
+          <h2>¿Cuándo necesita esta solución?</h2>
         </div>
         <div>
           {s.intro.map((t) => (
             <p key={t}>{t}</p>
           ))}
-          <p className="service-challenge">{s.challenge}</p>
+          <ul className="need-list">
+            {s.challenges.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
+        </div>
+      </section>
+      <section id="beneficios" className="service-benefits shell">
+        <p className="eyebrow">EL RESULTADO QUE BUSCAMOS</p>
+        <h2>¿Qué puede obtener su organización?</h2>
+        <div className="benefit-grid">
+          {s.benefits.map((t, i) => (
+            <article key={t}>
+              <span aria-hidden="true">0{i + 1}</span>
+              <p>{t}</p>
+            </article>
+          ))}
         </div>
       </section>
       <section id="alcance" className="service-scope">
@@ -88,8 +93,8 @@ export function ServiceLanding({ service: s }: { service: Landing }) {
               <h2>{s.capabilityTitle}</h2>
             </div>
             <p>
-              Tecnología, procesos y especialistas alineados con las necesidades
-              de su organización.
+              Tecnología, procedimientos y especialistas según el alcance que
+              necesita su organización.
             </p>
           </div>
           <div className="capability-grid">
@@ -105,6 +110,20 @@ export function ServiceLanding({ service: s }: { service: Landing }) {
           </div>
         </div>
       </section>
+      {s.slug === "protect-recover" && (
+        <section
+          id="soluciones-proteccion"
+          className="protection-solutions shell"
+        >
+          <p className="eyebrow">DENTRO DE PROTECT AND RECOVER</p>
+          <h2>Dos soluciones para fortalecer su protección.</h2>
+          <p>
+            Contrate la solución de respaldo como servicio o añada análisis y
+            validación de recuperación en un entorno aislado.
+          </p>
+          <ServiceCards slugs={["backup-as-a-service", "cleanshield"]} />
+        </section>
+      )}
       <section id="enfoque" className="service-approach shell">
         <div className="approach-image">
           <Image
@@ -161,32 +180,11 @@ export function ServiceLanding({ service: s }: { service: Landing }) {
           />
         </section>
       )}
-      {experience[s.slug] && (
-        <section className="service-experience shell">
-          <p className="eyebrow">EXPERIENCIA APLICADA</p>
-          <h2>{experience[s.slug].title}</h2>
-          <p>{experience[s.slug].body}</p>
-          <span>Casos de Optimize IT · Clientes no identificados</span>
-        </section>
-      )}
-      <section className="service-path shell">
-        <p className="eyebrow">CÓMO COMENZAMOS</p>
+      <section id="proceso" className="service-path shell">
+        <p className="eyebrow">CÓMO TRABAJAMOS</p>
         <h2>Una ruta clara para su necesidad.</h2>
         <div className="service-path-grid">
-          {[
-            {
-              title: "Conocemos su situación",
-              text: "Revisamos qué necesita resolver y las plataformas de las que depende su operación.",
-            },
-            {
-              title: "Definimos el alcance",
-              text: "Acordamos la solución, las responsabilidades y los criterios de trabajo.",
-            },
-            {
-              title: "Acompañamos la implementación",
-              text: "Prestamos los servicios definidos y revisamos su funcionamiento con el equipo.",
-            },
-          ].map((c, i) => (
+          {s.process.map((c, i) => (
             <div key={c.title}>
               <span>{String(i + 1).padStart(2, "0")}</span>
               <h3>{c.title}</h3>
@@ -200,6 +198,9 @@ export function ServiceLanding({ service: s }: { service: Landing }) {
           <p className="eyebrow">04 / RESOLVEMOS SUS DUDAS</p>
           <h2>Preguntas frecuentes.</h2>
           <p>{s.closing}</p>
+          <a href="#contacto" className="button primary">
+            {s.cta} ↗
+          </a>
         </div>
         <div>
           {s.faqs.map((f) => (

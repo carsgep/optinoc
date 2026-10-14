@@ -3,7 +3,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { site } from "@/content/site";
-import { landings } from "@/content/landings";
+import { landings, primaryLandings } from "@/content/landings";
 import { AdvisoryForm } from "./AdvisoryForm";
 import { track } from "@/lib/analytics";
 export function ContactButton({
@@ -66,19 +66,37 @@ export function Navigation() {
             <details className="solutions-dropdown">
               <summary>Servicios ▾</summary>
               <div>
-                {landings.map((s) => (
-                  <Link
-                    key={s.slug}
-                    href={`/soluciones/${s.slug}/`}
-                    onClick={(event) => {
-                      setOpen(false);
-                      event.currentTarget
-                        .closest("details")
-                        ?.removeAttribute("open");
-                    }}
-                  >
-                    {s.shortName}
-                  </Link>
+                {primaryLandings.map((s) => (
+                  <div className="nav-service-group" key={s.slug}>
+                    <Link
+                      href={`/soluciones/${s.slug}/`}
+                      onClick={(e) => {
+                        setOpen(false);
+                        e.currentTarget
+                          .closest("details")
+                          ?.removeAttribute("open");
+                      }}
+                    >
+                      {s.shortName}
+                    </Link>
+                    {landings
+                      .filter((child) => child.parentSlug === s.slug)
+                      .map((child) => (
+                        <Link
+                          className="nav-child-solution"
+                          key={child.slug}
+                          href={`/soluciones/${child.slug}/`}
+                          onClick={(e) => {
+                            setOpen(false);
+                            e.currentTarget
+                              .closest("details")
+                              ?.removeAttribute("open");
+                          }}
+                        >
+                          {child.shortName}
+                        </Link>
+                      ))}
+                  </div>
                 ))}
               </div>
             </details>
@@ -119,10 +137,21 @@ export function Footer() {
           <p>{site.labels.footerTagline}</p>
         </div>
         <nav aria-label="Soluciones en el pie de página">
-          {landings.map((s) => (
-            <Link key={s.slug} href={`/soluciones/${s.slug}/`}>
-              {s.name}
-            </Link>
+          {primaryLandings.map((s) => (
+            <div className="footer-service-group" key={s.slug}>
+              <Link href={`/soluciones/${s.slug}/`}>{s.shortName}</Link>
+              {landings
+                .filter((child) => child.parentSlug === s.slug)
+                .map((child) => (
+                  <Link
+                    className="footer-child-solution"
+                    key={child.slug}
+                    href={`/soluciones/${child.slug}/`}
+                  >
+                    {child.shortName}
+                  </Link>
+                ))}
+            </div>
           ))}
         </nav>
         <div>

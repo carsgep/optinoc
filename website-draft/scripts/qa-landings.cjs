@@ -49,9 +49,8 @@ const copy = require("../content/landing-copy.json");
         })),
       );
     assert.equal(axe.violations.length, 0);
-    await page.screenshot({
-      path: `qa-artifacts/landings/${s.slug}-desktop.png`,
-    });
+    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
+    await page.screenshot({path:`qa-artifacts/landings/${s.slug}-desktop.png`});
     for (const width of [390, 320]) {
       await page.setViewportSize({ width, height: 844 });
       assert.ok(
@@ -72,7 +71,7 @@ const copy = require("../content/landing-copy.json");
     );
   }
   await page.goto(`${base}/home-v2/`);
-  assert.equal(await page.locator("#servicios .service-card").count(), 9);
+  assert.equal(await page.locator("#servicios .service-card").count(), 7);
   await page.screenshot({ path: "qa-artifacts/landings/home-desktop.png" });
   await page.locator('#servicios a[href="/soluciones/optidesk/"]').click();
   await page.waitForURL("**/soluciones/optidesk/");

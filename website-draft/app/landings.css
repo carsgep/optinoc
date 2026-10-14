@@ -705,3 +705,136 @@
     width: 90px;
   }
 }
+
+.service-v2 .service-hero h1 {
+  font-size: clamp(2.55rem, 4.2vw, 4.3rem);
+  max-width: 890px;
+}
+.service-v2 .service-hero {
+  min-height: 820px;
+}
+.service-v2 .hero-actions .button {
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.4;
+}
+.need-list {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 0;
+}
+.need-list li {
+  padding: 16px 0 16px 24px;
+  border-top: 1px solid var(--line);
+  position: relative;
+  color: #e1edf6;
+}
+.need-list li:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 25px;
+  width: 7px;
+  height: 7px;
+  background: var(--color-lime);
+  border-radius: 50%;
+}
+.service-benefits {
+  padding-bottom: 90px;
+}
+.service-benefits h2 {
+  font-size: clamp(2rem, 3.2vw, 3rem);
+}
+.benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-top: 35px;
+}
+.benefit-grid article {
+  border-top: 1px solid #8bd45f70;
+  padding-top: 23px;
+}
+.benefit-grid span {
+  display: block;
+  color: var(--color-lime);
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+.benefit-grid p {
+  color: #deebf4;
+}
+.service-v2 .service-path-grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px;
+}
+.protection-solutions {
+  padding-top: 80px;
+  padding-bottom: 10px;
+}
+.protection-solutions .service-card-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+.protection-card-note {
+  font-size: 0.8rem !important;
+  color: var(--color-lime);
+}
+.nav-service-group {
+  display: grid;
+  gap: 2px;
+}
+.solutions-dropdown .nav-service-group a {
+  font-size: 0.85rem;
+  padding: 6px 10px;
+}
+.solutions-dropdown .nav-service-group .nav-child-solution {
+  margin-left: 15px;
+  border-left: 1px solid #8bd45f66;
+  font-size: 0.77rem;
+  color: #afc1d0;
+}
+.footer-service-group {
+  display: grid;
+  gap: 7px;
+}
+.footer-child-solution {
+  margin-left: 15px;
+  font-size: 0.8rem !important;
+  color: #afc1d0 !important;
+}
+.service-faq .button {
+  white-space: normal;
+  max-width: 100%;
+}
+@media (max-width: 900px) {
+  .service-v2 .service-path-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .service-v2 .service-hero h1 {
+    font-size: clamp(2.25rem, 8.3vw, 3.6rem);
+  }
+  .service-v2 .service-hero {
+    min-height: 830px;
+  }
+  .service-v2 .hero-actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .service-v2 .service-hero-copy {
+    padding-bottom: 85px;
+  }
+  .benefit-grid,
+  .protection-solutions .service-card-grid,
+  .service-v2 .service-path-grid {
+    grid-template-columns: 1fr;
+  }
+  .service-benefits {
+    padding-bottom: 60px;
+  }
+  .protection-solutions {
+    padding-top: 60px;
+  }
+}
