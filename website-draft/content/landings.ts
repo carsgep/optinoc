@@ -114,9 +114,14 @@ export const landings = copy.map((item) => {
   return {
     ...item,
     ...extra,
-    heroSrc: visual?.src ?? `/media/solutions/${extra.image}/hero-v3.webp`,
+    heroSrc:
+      item.slug === "cleanshield"
+        ? "/media/solutions/cleanshield/hero-v4.webp"
+        : (visual?.src ?? `/media/solutions/${extra.image}/hero-v3.webp`),
     mobileSrc:
-      visual?.mobileSrc ??
+      (item.slug === "cleanshield"
+        ? "/media/solutions/cleanshield/hero-v4-mobile.webp"
+        : visual?.mobileSrc) ??
       `/media/solutions/${extra.image}/hero-v3-mobile.webp`,
     alt:
       visual?.alt ??

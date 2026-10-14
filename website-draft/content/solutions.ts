@@ -544,4 +544,23 @@ export const technologies = [
   "AWS",
   "Microsoft Azure",
   "Wasabi",
-].map((name) => ({ name, logo: undefined as Media | undefined }));
+].map((name, index) => ({
+  name,
+  logo: {
+    type: "image",
+    src:
+      "/media/brands/" +
+      [
+        "ibm.webp",
+        "redhat.svg",
+        "veeam.svg",
+        "dell.svg",
+        "lenovo.webp",
+        "aws.svg",
+        "microsoft.webp",
+        "wasabi-white.webp",
+      ][index],
+    alt:
+      name === "Microsoft Azure" ? "Logo Microsoft para Azure" : "Logo " + name,
+  } as Media,
+}));

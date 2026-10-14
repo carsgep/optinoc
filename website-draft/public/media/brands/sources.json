@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-14",
+  "sources": [
+    {
+      "brand": "IBM",
+      "url": "https://raw.githubusercontent.com/IBM/bamoe-docs/main/images/ibm-8-bar-logo.svg"
+    },
+    {
+      "brand": "Red Hat",
+      "url": "https://www.redhat.com/en/about/brand/standards/logo"
+    },
+    {
+      "brand": "Veeam",
+      "url": "https://www.veeam.com/content/dam/veeam/global/brand-resource-center/veeam_logo.zip"
+    },
+    {
+      "brand": "Dell",
+      "url": "https://www.dell.com/support/home/en-us"
+    },
+    {
+      "brand": "Lenovo",
+      "url": "https://media.lenovobrandworld.fiestic.com/2022/06/08010946/LenovoLogo_POS-Red-H.png"
+    },
+    {
+      "brand": "AWS",
+      "url": "https://aws.amazon.com/"
+    },
+    {
+      "brand": "Microsoft Azure",
+      "url": "https://uhf.microsoft.com/images/microsoft/RE1Mu3b.png"
+    },
+    {
+      "brand": "Wasabi",
+      "url": "https://a-us.storyblok.com/f/1019449/1148x270/00676e941d/secondary-logo-knockout-rgb.png"
+    }
+  ],
+  "note": "Official artwork from brand sites and official IBM repository. Microsoft corporate logo identifies Azure. No generated logos or partnership badges."
+}

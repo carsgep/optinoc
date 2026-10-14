@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-14",
+  "tool": "imagegen",
+  "prompt": "Use case: premium enterprise technology website. Asset: wide 16:9 photographic and cinematic 3D hero image for CleanShield, a clean-room backup recovery service. Main subject: a large sophisticated translucent glass and brushed metal security shield in the right two thirds, integrated into an isolated glass-walled modern server recovery chamber. Subtle green scanning light crosses the shield, refined blue data paths connect server racks behind it. Shield must be unmistakable, elegant physically rendered volumetric shape, not a flat icon or cartoon. Dark navy #071321 background, deep blue #102236, cyan #48a7d8 and restrained lime green #8bd45f accents. Dark uncluttered left third for HTML headline. Photoreal architectural materials, realistic cinematic blue rim lighting, high detail, sophisticated clean cyberresilience. No text, no lettering, no numbers, no logos, no watermark, no biohazard or medical imagery, no padlocks, no humanoid robots. Maintain ample negative space left and subject recognizable on mobile crop.",
+  "originalFile": "exec-33fd2699-1b7e-4714-bec5-6234864d60c2.png",
+  "outputs": [
+    "public/media/solutions/cleanshield/hero-v4.webp",
+    "public/media/solutions/cleanshield/hero-v4-mobile.webp"
+  ]
+}

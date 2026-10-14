@@ -5,7 +5,7 @@ import { SolutionsExperience } from "@/components/SolutionsExperience";
 import { ExperienceMetrics, SuccessCaseCard } from "@/components/Story";
 import { CTASection } from "@/components/SiteChrome";
 import { ServiceCards } from "@/components/ServiceCards";
-import { MediaBlock } from "@/components/MediaBlock";
+import Image from "next/image";
 export const metadata: Metadata = {
   title: "Proteger, operar y transformar",
   description: site.description,
@@ -62,8 +62,19 @@ export default function Home() {
         <p>{site.labels.partnerDescription}</p>
         <div className="technology-grid">
           {technologies.map((t) => (
-            <div key={t.name}>
-              {t.logo ? <MediaBlock media={t.logo} /> : <span>{t.name}</span>}
+            <div
+              key={t.name}
+              className={`brand-tile ${t.name === "Wasabi" ? "brand-dark" : ""}`}
+            >
+              <Image
+                src={t.logo.src}
+                alt={t.logo.alt}
+                width={220}
+                height={80}
+                className={`brand-logo brand-${t.name.toLowerCase().replaceAll(" ", "-")}`}
+                sizes="(max-width: 760px) 40vw, 20vw"
+              />
+              <span className="brand-caption">{t.name}</span>
             </div>
           ))}
         </div>
